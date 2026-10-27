@@ -2,7 +2,8 @@
 # VM fix 2026-10-27: Users tab can add people (useradd in sbin); marketplace counts what you already have
 # (Remove works), says when a removal fails, no Set up for docs-local, paas-market import-mcp, MCP token types
 # (shared / personal / none), new users without claude's first-run questions, marketplace readable by its users
-# only, View / warning for people's items, removed users' shared items removed. Run as root.
+# only, View / warning for people's items, removed users' shared items removed, root's settings.json env for
+# everyone (keys they set win). Run as root.
 set -eu
 D=$(cd "$(dirname "$0")" && pwd)
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }

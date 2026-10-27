@@ -55,6 +55,10 @@ EOF
 
 provision() {       # links to the shared brain, own notes, UI plugins, default marketplace items
   u=$1; h=$(home_of "$u"); [ -n "$h" ] || die "no account $u"
+  # root's own settings.json "env" (proxy, CA file, model, ...): handed over in the environment, not on a command line
+  PAAS_ROOT_ENV=$(python3 -c 'import json,sys
+try: print(json.dumps(json.load(open(sys.argv[1])).get("env", {})))
+except Exception: print("{}")' "$(home_of root)/.claude/settings.json") \
   runuser -u "$u" -- sh -s "$P" "$u" <<'EOS'
 set -eu
 P=$1; C=$HOME/.claude
@@ -86,12 +90,18 @@ def load(p):                                              # {} when missing, Non
     except (OSError, ValueError):
         return None
 managed = load(sys.argv[3]) or {}
+root_env = json.loads(os.environ.get("PAAS_ROOT_ENV") or "{}")
 for p, seed in ((sys.argv[1], {"hasCompletedOnboarding": True}),
                 (sys.argv[2], {k: managed[k] for k in ("theme", "statusLine", "spinnerVerbs", "spinnerTipsOverride",
                                                        "preferredNotifChannel") if k in managed})):
     s = load(p)
-    if s is not None and {**seed, **s} != s:              # an unreadable file is left alone
-        json.dump({**seed, **s}, open(p, "w"), indent=2)
+    if s is None:                                         # an unreadable file is left alone
+        continue
+    new = {**seed, **s}
+    if p == sys.argv[2] and root_env:                     # root's env: the keys they did not set themselves
+        new["env"] = {**root_env, **s.get("env", {})}
+    if new != s:
+        json.dump(new, open(p, "w"), indent=2)
 EOP
 [ -f "$C/brain/notes.md" ] || printf '# Notes\n\nFacts learned in your sessions (one dated line each).\n' > "$C/brain/notes.md"
 for p in "$P"/ui-plugins/*/; do
