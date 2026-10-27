@@ -1,0 +1,138 @@
+#!/bin/sh
+# Manage the people who use the brain and its web UI on this VM (root only). Each person is a Linux account in the
+# group paas-users with their own home, sessions, notes and marketplace items, and their own web UI service
+# (paas-ui@<name>, 127.0.0.1, port in /etc/paas/users/<name>.env) that the sign-in gate on :3001 forwards them to.
+#
+#   paas-user add <name>          create the account (password read from stdin, or asked), set it up, start its UI
+#   paas-user passwd <name>       new password (stdin, or asked)
+#   paas-user lock|unlock <name>  block / allow signing in (lock also stops their UI)
+#   paas-user remove <name> [--delete-home]   remove the account and its UI (home kept unless --delete-home)
+#   paas-user provision <name>|--all          re-apply the shared links, UI plugins and default items (after updates)
+#   paas-user list [--json]       everyone, with port, locked and running
+set -eu
+export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"     # useradd / usermod / chpasswd live in sbin; the UI calls this with a short PATH
+[ "$(id -u)" = 0 ] || { echo "paas-user: run as root"; exit 1; }
+P=/opt/paas
+ETC=/etc/paas/users
+BASE_PORT=41000
+die() { echo "paas-user: $*" >&2; exit 1; }
+valid() { echo "$1" | grep -Eq '^[a-z_][a-z0-9_.-]{0,31}$' || die "'$1' is not a valid user name"; }
+home_of() { getent passwd "$1" | cut -d: -f6; }
+
+read_password() {   # one line from stdin when it is not a terminal; else asked twice
+  if [ -t 0 ]; then
+    stty -echo; printf 'password for %s: ' "$1" >&2; read -r a; printf '\nagain: ' >&2; read -r b; stty echo; echo >&2
+    [ "$a" = "$b" ] || die "the two passwords differ"
+  else
+    read -r a || true
+  fi
+  [ ${#a} -ge 8 ] || die "password: at least 8 characters"
+  printf '%s:%s\n' "$1" "$a" | chpasswd
+}
+
+next_port() {       # root: 41000; others: one above the highest port in use
+  [ "$1" = root ] && { echo $BASE_PORT; return; }
+  max=$BASE_PORT
+  for f in "$ETC"/*.env; do
+    [ -f "$f" ] || continue
+    p=$(sed -n 's/^SERVER_PORT=//p' "$f"); [ "${p:-0}" -gt "$max" ] && max=$p
+  done
+  echo $((max + 1))
+}
+
+write_env() {       # the UI service settings of <name>: made once, port and secret kept afterwards
+  f="$ETC/$1.env"
+  [ -f "$f" ] && return
+  umask 077
+  cat > "$f" <<EOF
+SERVER_PORT=$(next_port "$1")
+JWT_SECRET=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+PAAS_LOGIN_USERS=$1
+CLAUDE_CLI_PATH=$(command -v claude || echo /usr/local/bin/claude)
+PATH=$P/ui/node/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+EOF
+}
+
+provision() {       # links to the shared brain, own notes, UI plugins, default marketplace items
+  u=$1; h=$(home_of "$u"); [ -n "$h" ] || die "no account $u"
+  runuser -u "$u" -- sh -s "$P" "$u" <<'EOS'
+set -eu
+P=$1; C=$HOME/.claude
+mkdir -p "$C/brain/notes" "$HOME/storage-reports" "$HOME/chats" "$HOME/.claude-code-ui/plugins"
+for l in brain/library:library tools:tools banner:banner themes:themes; do
+  dst=$C/${l%%:*}; src=$P/${l#*:}
+  [ -L "$dst" ] || [ ! -e "$dst" ] || continue      # never replace a real file the person made
+  ln -sfn "$src" "$dst"
+done
+# their own environment.md / tool-map.md / CLAUDE.md, started from root's default (root's are the default itself);
+# a copy they never edited follows the default on updates (.<file>.default = the default it was copied from)
+for f in environment.md tool-map.md CLAUDE.md; do
+  [ "$2" = root ] && continue
+  dst=$C/brain/$f; [ $f = CLAUDE.md ] && dst=$C/CLAUDE.md; seed=$C/brain/.$f.default
+  if [ -L "$dst" ] || [ ! -e "$dst" ] || { [ -f "$seed" ] && [ "$(cat "$dst")" = "$(cat "$seed")" ]; }; then
+    rm -f "$dst"; cp "$P/brain/$f" "$dst"; cp "$P/brain/$f" "$seed"
+  fi
+done
+[ -f "$C/brain/notes.md" ] || printf '# Notes\n\nFacts learned in your sessions (one dated line each).\n' > "$C/brain/notes.md"
+for p in "$P"/ui-plugins/*/; do
+  n=$(basename "$p")
+  [ "$n" = paas-users ] && [ "$2" != root ] && continue   # managing users: root only
+  rm -rf "$HOME/.claude-code-ui/plugins/$n"; cp -R "$p" "$HOME/.claude-code-ui/plugins/$n"
+done
+PAAS_MARKET=$P/marketplace "$P/bin/paas-market" defaults >/dev/null 2>&1 || echo "note: default marketplace items not added (is claude installed?)"
+EOS
+}
+
+share_dir() {       # where <name> puts the skills / agents they share in the marketplace (only they write it)
+  mkdir -p "$P/marketplace/contrib/$1"
+  chown "$1": "$P/marketplace/contrib/$1"; chmod 755 "$P/marketplace/contrib" "$P/marketplace/contrib/$1"
+}
+
+start_ui() { systemctl enable --now "paas-ui@$1" >/dev/null 2>&1 || echo "note: could not start paas-ui@$1 (systemctl status paas-ui@$1)"; }
+
+cmd=${1:-}; shift || true
+case "$cmd" in
+  add)
+    u=${1:-}; valid "$u"
+    if [ "$u" != root ]; then
+      if id "$u" >/dev/null 2>&1; then usermod -aG paas-users "$u"      # an existing account keeps its password
+      else useradd -m -G paas-users "$u"; read_password "$u"; fi
+    fi
+    write_env "$u"; share_dir "$u"; provision "$u"; start_ui "$u"
+    echo "added $u (UI port $(sed -n 's/^SERVER_PORT=//p' "$ETC/$u.env"))" ;;
+  passwd)
+    u=${1:-}; valid "$u"; id "$u" >/dev/null 2>&1 || die "no account $u"; read_password "$u"; echo "password changed for $u" ;;
+  lock)
+    u=${1:-}; valid "$u"; [ "$u" != root ] || die "root cannot be locked here"
+    usermod -L "$u"; systemctl stop "paas-ui@$u" 2>/dev/null || true; echo "locked $u" ;;
+  unlock)
+    u=${1:-}; valid "$u"; usermod -U "$u"; start_ui "$u"; echo "unlocked $u" ;;
+  remove)
+    u=${1:-}; valid "$u"; [ "$u" != root ] || die "root cannot be removed"
+    systemctl disable --now "paas-ui@$u" >/dev/null 2>&1 || true
+    rm -f "$ETC/$u.env"
+    if [ "${2:-}" = --delete-home ]; then userdel -r "$u" 2>/dev/null || true; else userdel "$u" 2>/dev/null || true; fi
+    echo "removed $u${2:+ (home deleted)}" ;;
+  provision)
+    if [ "${1:-}" = --all ]; then for f in "$ETC"/*.env; do [ -f "$f" ] && { share_dir "$(basename "$f" .env)"; provision "$(basename "$f" .env)"; }; done
+    else valid "${1:-}"; share_dir "$1"; provision "$1"; fi
+    echo "provisioned" ;;
+  list)
+    json=0; [ "${1:-}" = --json ] && json=1
+    [ $json = 1 ] && printf '['
+    first=1
+    for f in "$ETC"/*.env; do
+      [ -f "$f" ] || continue
+      u=$(basename "$f" .env); port=$(sed -n 's/^SERVER_PORT=//p' "$f")
+      locked=false; passwd -S "$u" 2>/dev/null | grep -q ' L\| LK' && locked=true
+      running=false; systemctl is-active --quiet "paas-ui@$u" && running=true
+      if [ $json = 1 ]; then
+        [ $first = 1 ] || printf ','; first=0
+        printf '{"name":"%s","port":%s,"locked":%s,"running":%s,"home":"%s"}' "$u" "$port" $locked $running "$(home_of "$u")"
+      else
+        printf '%-20s port %-6s %s %s\n' "$u" "$port" "$([ $locked = true ] && echo locked || echo active)" "$([ $running = true ] && echo running || echo stopped)"
+      fi
+    done
+    [ $json = 1 ] && printf ']\n' ;;
+  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
