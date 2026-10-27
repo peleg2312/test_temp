@@ -204,6 +204,15 @@ def own_mcp(name):
         return None
 
 
+def mcp_folders(name):
+    """folders where <name> was added for that folder only (`claude mcp add` without -s user)"""
+    try:
+        projects = json.load(open(os.path.expanduser("~/.claude.json"))).get("projects", {})
+    except (OSError, ValueError):
+        return []
+    return [p for p, v in projects.items() if name in (v.get("mcpServers") or {})]
+
+
 def new_item(kind, name):
     """create a skill / agent / MCP server of your own from JSON on stdin and share it with everyone:
     skill {description, when, body} - agent {description, tools, model, body} - mcp {description, url, token}"""
@@ -354,7 +363,7 @@ def already_have(kind, name):
         except OSError:
             mine = []
         return os.path.isfile(own_path("agent", name)) and name not in mine
-    return kind == "mcp" and own_mcp(name) is not None
+    return kind == "mcp" and (own_mcp(name) is not None or bool(mcp_folders(name)))
 
 
 def risky(it):
@@ -490,10 +499,10 @@ def import_mcp(pairs):
     print(f"{done} MCP servers ready for everyone. Your servers: {', '.join(sorted(mine)) or 'none'}")
 
 
-def claude_cmd(*args):
+def claude_cmd(*args, cwd=None):
     claude = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
     try:
-        return subprocess.run([claude, *args], capture_output=True, text=True, timeout=120)
+        return subprocess.run([claude, *args], capture_output=True, text=True, timeout=120, cwd=cwd)
     except (OSError, subprocess.TimeoutExpired) as e:
         return subprocess.CompletedProcess(args, 1, "", str(e))
 
@@ -581,8 +590,11 @@ def remove(ids):
                 pass
         else:
             mcp_cmd("remove", "-s", "user", name)
-            if own_mcp(name) is not None:
-                sys.exit(f"paas-market: could not remove MCP server {name}: claude mcp remove -s user {name}")
+            for d in mcp_folders(name):                # also where it was added for one folder only
+                claude_cmd("mcp", "remove", "-s", "local", name, cwd=d if os.path.isdir(d) else None)
+            if own_mcp(name) is not None or mcp_folders(name):
+                where = ", ".join(["your user settings"] * (own_mcp(name) is not None) + mcp_folders(name))
+                sys.exit(f"paas-market: could not remove MCP server {name} ({where}): run claude mcp remove {name} there")
         state["installed"].pop(f"{kind}/{name}", None)
         save_state(state)
         print(f"removed {kind}/{name}")
