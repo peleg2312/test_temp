@@ -73,6 +73,26 @@ for f in environment.md tool-map.md CLAUDE.md; do
     rm -f "$dst"; cp "$P/brain/$f" "$dst"; cp "$P/brain/$f" "$seed"
   fi
 done
+# no first-run questions in `claude` (~/.claude.json), and root's look in their own settings.json (the theme, status
+# line, spinner, notifications of the managed settings; hooks and the key helper stay managed only). Keys they set win.
+[ "$2" = root ] || python3 - "$HOME/.claude.json" "$C/settings.json" /etc/claude-code/managed-settings.json <<'EOP'
+import json, os, sys
+def load(p):                                              # {} when missing, None when unreadable
+    if not os.path.exists(p):
+        return {}
+    try:
+        s = json.load(open(p))
+        return s if isinstance(s, dict) else None
+    except (OSError, ValueError):
+        return None
+managed = load(sys.argv[3]) or {}
+for p, seed in ((sys.argv[1], {"hasCompletedOnboarding": True}),
+                (sys.argv[2], {k: managed[k] for k in ("theme", "statusLine", "spinnerVerbs", "spinnerTipsOverride",
+                                                       "preferredNotifChannel") if k in managed})):
+    s = load(p)
+    if s is not None and {**seed, **s} != s:              # an unreadable file is left alone
+        json.dump({**seed, **s}, open(p, "w"), indent=2)
+EOP
 [ -f "$C/brain/notes.md" ] || printf '# Notes\n\nFacts learned in your sessions (one dated line each).\n' > "$C/brain/notes.md"
 for p in "$P"/ui-plugins/*/; do
   n=$(basename "$p")

@@ -28,13 +28,15 @@ const CSS = `
 .mk .types button b{display:block;font-size:13.5px}.mk .types button span{color:hsl(var(--muted-foreground));font-size:12px}
 .mk .types button.on{border-color:#8b5cf6;background:rgba(124,58,237,.12);box-shadow:0 0 0 1px #8b5cf6}
 .mk .fields{display:grid;grid-template-columns:1fr 2fr;gap:12px}
-.mk label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:hsl(var(--muted-foreground))}
-.mk label.wide{grid-column:1/-1}
+.mk label,.mk .lbl{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:hsl(var(--muted-foreground))}
+.mk label.wide,.mk .lbl.wide{grid-column:1/-1}
 .mk .nf input,.mk .nf textarea{background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:8px;padding:8px 11px;color:hsl(var(--foreground));font:400 13.5px/1.45 Inter,ui-sans-serif,system-ui,sans-serif;width:100%;box-sizing:border-box}
 .mk .nf input::placeholder,.mk .nf textarea::placeholder{color:hsl(var(--muted-foreground));opacity:.6}
 .mk .nf textarea{font:12.5px/1.55 ui-monospace,Menlo,monospace;resize:vertical;min-height:150px}
 .mk .nf input:focus,.mk .nf textarea:focus{outline:none;border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(124,58,237,.2)}
 .mk .nf .acts{padding-top:0}.mk .nst{color:#f87171}
+.mk .tm{display:flex;gap:6px;flex-wrap:wrap}.mk .tm button{border:1px solid hsl(var(--border));background:hsl(var(--background));color:inherit;border-radius:8px;padding:5px 10px;font:500 12.5px/1.4 inherit;cursor:pointer}
+.mk .tm button.on{border-color:#8b5cf6;background:rgba(124,58,237,.12)}
 .mk .empty{padding:36px;text-align:center;color:hsl(var(--muted-foreground))}
 @media (max-width:640px){.mk{padding:16px}.mk .grid,.mk .fields,.mk .types{grid-template-columns:1fr}}`;
 
@@ -69,7 +71,7 @@ export function mount(container, api) {
     const shown = items.filter((i) => (kind === 'all' || (kind === 'have' ? i.added || (i.author && i.author === me) : i.kind === kind))
       && words.every((w) => `${i.name} ${i.description} ${KIND[i.kind]}`.toLowerCase().includes(w)));
     grid.innerHTML = shown.map((i) => { const mine = i.author && i.author === me; return `<div class="item${i.added || mine ? ' have' : ''}" data-id="${esc(i.id)}">
-      <div><span class="tag">${KIND[i.kind]}</span>${mine ? '<span class="tag have">yours</span>' : i.author ? `<span class="tag">by ${esc(i.author)}</span>` : ''}${i.added ? '<span class="tag have">added</span>' : ''}${i.added && i.kind === 'plugin' && !i.enabled ? '<span class="tag upd">off</span>' : ''}${i.update ? '<span class="tag upd">update</span>' : ''}${i.ready ? '' : '<span class="tag upd">not set up</span>'}</div>
+      <div><span class="tag">${KIND[i.kind]}</span>${mine ? '<span class="tag have">yours</span>' : i.author ? `<span class="tag">by ${esc(i.author)}</span>` : ''}${i.added ? '<span class="tag have">added</span>' : ''}${i.added && i.kind === 'plugin' && !i.enabled ? '<span class="tag upd">off</span>' : ''}${i.update ? '<span class="tag upd">update</span>' : ''}${i.ready ? '' : '<span class="tag upd">not set up</span>'}${i.token_mode === 'personal' ? '<span class="tag">own token</span>' : ''}</div>
       <div class="t">${i.kind === 'skill' ? '/' : ''}${esc(i.name)}</div><div class="d" title="${esc(i.description)}">${esc(i.description)}</div>
       <div class="acts">${mine ? '<button class="ghost" data-a="edit">Edit</button><button class="ghost" data-a="unshare">Unshare</button>'
         : `${i.added && i.kind === 'plugin' ? `<button class="ghost" data-a="toggle" data-on="${i.enabled ? 0 : 1}">${i.enabled ? 'Turn off' : 'Turn on'}</button>` : ''}${i.added ? `<button class="ghost" data-a="remove">Remove</button>${i.update ? '<button class="go" data-a="add">Update</button>' : ''}`
@@ -81,13 +83,35 @@ export function mount(container, api) {
 
   async function act(card, a, btn) {
     const id = card.dataset.id;
+    const it = items.find((x) => x.id === id) || {};
     if (a === 'setup') {
       if (card.querySelector('.setup')) return;
-      card.insertAdjacentHTML('beforeend', `<div class="setup"><input class="u" placeholder="http://host:8000/mcp"><input class="tk" type="password" placeholder="Bearer token (optional)">
+      let mode = it.token_mode === 'none' || it.token_mode === 'personal' ? it.token_mode : 'shared';
+      card.insertAdjacentHTML('beforeend', `<div class="setup"><input class="u" placeholder="http://host:8000/mcp" value="${esc(it.url || '')}">
+        <div class="tm">${[['shared', 'One token for everyone'], ['personal', 'Each person their own'], ['none', 'No token']].map(([m, l]) => `<button type="button" data-m="${m}">${l}</button>`).join('')}</div>
+        <input class="tk" type="password" placeholder="The token everyone uses">
         <div class="acts"><button class="go s">Save</button><span class="sub st"></span></div></div>`);
+      const tk = card.querySelector('.tk');
+      const pick = () => { card.querySelectorAll('.tm button').forEach((x) => x.classList.toggle('on', x.dataset.m === mode)); tk.style.display = mode === 'shared' ? '' : 'none'; };
+      card.querySelectorAll('.tm button').forEach((x) => x.addEventListener('click', () => { mode = x.dataset.m; pick(); }));
+      pick();
       card.querySelector('.s').addEventListener('click', async () => {
-        const r = await api.rpc('POST', 'setup-mcp', { name: id.split('/')[1], url: card.querySelector('.u').value.trim(), token: card.querySelector('.tk').value.trim() })
+        const r = await api.rpc('POST', 'setup-mcp', { name: id.split('/')[1], url: card.querySelector('.u').value.trim(), mode, token: mode === 'shared' ? tk.value.trim() : '' })
           .catch((e) => ({ out: String(e.message || e) }));
+        if (!r.ok) { card.querySelector('.st').textContent = r.out; return; }
+        load();
+      });
+      return;
+    }
+    if (a === 'add' && it.token_mode === 'personal' && !it.added) {
+      if (card.querySelector('.setup')) return;
+      card.insertAdjacentHTML('beforeend', `<div class="setup"><input class="ptk" type="password" placeholder="Your own token (optional)">
+        <div class="acts"><button class="go pa">Add</button><span class="sub st"></span></div></div>`);
+      card.querySelector('.ptk').focus();
+      card.querySelector('.pa').addEventListener('click', async (e) => {
+        e.target.disabled = true;
+        const r = await api.rpc('POST', 'add', { ids: [id], token: card.querySelector('.ptk').value.trim() }).catch((x) => ({ out: String(x.message || x) }));
+        e.target.disabled = false;
         if (!r.ok) { card.querySelector('.st').textContent = r.out; return; }
         load();
       });
@@ -114,25 +138,35 @@ export function mount(container, api) {
         <label class="f-agent"><span>Tools <i style="font-weight:400">(optional)</i></span><input class="nt" placeholder="e.g. Read, Grep, Bash"></label>
         <label class="f-agent"><span>Model <i style="font-weight:400">(optional)</i></span><input class="nm" placeholder="sonnet, opus or haiku (default: same as yours)"></label>
         <label class="f-mcp">Address<input class="nu" placeholder="http://host:8000/mcp"></label>
-        <label class="f-mcp"><span>Bearer token <i style="font-weight:400">(optional)</i></span><input class="ntk" type="password"></label>
+        <div class="lbl wide f-mcp">Token<div class="tm ntm">${[['shared', 'One token for everyone'], ['personal', 'Each person their own'], ['none', 'No token']].map(([m, l]) => `<button type="button" data-m="${m}">${l}</button>`).join('')}</div></div>
+        <label class="wide f-mcp f-tok"><span class="ntl">The token everyone uses</span><input class="ntk" type="password"></label>
         <label class="wide f-body">Instructions (Markdown)<textarea class="nb" rows="8" placeholder="Steps, commands, checks, what to report"></textarea></label>
       </div>
       <div class="acts"><button class="go ns">Create and share</button><button class="ghost nc">Cancel</button><span class="sub nst"></span></div></div>`;
     let nk = 'skill';
+    let ntm = 'shared';
+    const tokLabel = { shared: 'The token everyone uses', personal: 'Your own token (optional, only you use it)' };
+    const tmVis = () => {
+      slot.querySelectorAll('.ntm button').forEach((x) => x.classList.toggle('on', x.dataset.m === ntm));
+      slot.querySelector('.f-tok').style.display = nk === 'mcp' && ntm !== 'none' ? '' : 'none';
+      slot.querySelector('.ntl').textContent = tokLabel[ntm] || '';
+    };
     const v = (c) => slot.querySelector(c).value;
     const kindVis = () => {
       const show = { skill: ['f-skill', 'f-body'], agent: ['f-agent', 'f-body'], mcp: ['f-mcp'] }[nk];
       slot.querySelectorAll('.f-skill,.f-agent,.f-mcp,.f-body').forEach((el) => { el.style.display = show.some((c) => el.classList.contains(c)) ? '' : 'none'; });
       slot.querySelectorAll('.types button').forEach((x) => x.classList.toggle('on', x.dataset.t === nk));
     };
-    slot.querySelectorAll('.types button').forEach((x) => x.addEventListener('click', () => { nk = x.dataset.t; kindVis(); }));
+    slot.querySelectorAll('.types button').forEach((x) => x.addEventListener('click', () => { nk = x.dataset.t; kindVis(); tmVis(); }));
+    slot.querySelectorAll('.ntm button').forEach((x) => x.addEventListener('click', () => { ntm = x.dataset.m; tmVis(); }));
     kindVis();
+    tmVis();
     slot.querySelector('.nn').focus();
     slot.querySelector('.nc').addEventListener('click', () => { slot.innerHTML = ''; });
     slot.querySelector('.ns').addEventListener('click', async (e) => {
       e.target.disabled = true;
       const r = await api.rpc('POST', 'new', { kind: nk, name: v('.nn').trim(), description: v('.nd'), when: v('.nw'), tools: v('.nt'),
-        model: v('.nm').trim(), url: v('.nu').trim(), token: v('.ntk').trim(), body: v('.nb') }).catch((x) => ({ out: String(x.message || x) }));
+        model: v('.nm').trim(), url: v('.nu').trim(), token: ntm === 'none' ? '' : v('.ntk').trim(), token_mode: ntm, body: v('.nb') }).catch((x) => ({ out: String(x.message || x) }));
       e.target.disabled = false;
       if (!r.ok) { slot.querySelector('.nst').textContent = r.out; return; }
       slot.innerHTML = '';
@@ -149,17 +183,25 @@ export function mount(container, api) {
       <div class="fields">${mcp ? `
         <label class="wide">Description<input class="ed" value="${esc(m.description)}"></label>
         <label>Address<input class="eu" value="${esc(m.url)}"></label>
-        <label><span>Bearer token <i style="font-weight:400">(${m.has_token ? 'blank keeps the current one' : 'optional'})</i></span><input class="et" type="password"></label>`
+        <div class="lbl wide">Token<div class="tm etm">${[['shared', 'One token for everyone'], ['personal', 'Each person their own'], ['none', 'No token']].map(([m, l]) => `<button type="button" data-m="${m}">${l}</button>`).join('')}</div></div>
+        <label class="e-tok"><span>Token <i style="font-weight:400">(${m.has_token ? 'blank keeps the current one' : 'optional'})</i></span><input class="et" type="password"></label>`
         : '<label class="wide">The file: header (name, description) between the --- lines, then the instructions<textarea class="ex" rows="18" spellcheck="false"></textarea></label>'}
       </div>
       <div class="acts"><button class="go es">Save</button><button class="ghost ec">Cancel</button><span class="sub nst"></span></div></div>`;
     if (!mcp) slot.querySelector('.ex').value = r.out;
+    let etm = mcp ? m.token_mode : '';
+    const etmVis = () => {
+      slot.querySelectorAll('.etm button').forEach((x) => x.classList.toggle('on', x.dataset.m === etm));
+      const t = slot.querySelector('.e-tok'); if (t) t.style.display = etm === 'none' ? 'none' : '';
+    };
+    slot.querySelectorAll('.etm button').forEach((x) => x.addEventListener('click', () => { etm = x.dataset.m; etmVis(); }));
+    etmVis();
     slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
     slot.querySelector('.ec').addEventListener('click', () => { slot.innerHTML = ''; });
     slot.querySelector('.es').addEventListener('click', async (e) => {
       e.target.disabled = true;
       const v = (c) => slot.querySelector(c).value;
-      const body = mcp ? { id, description: v('.ed'), url: v('.eu').trim(), token: v('.et').trim() } : { id, text: v('.ex') };
+      const body = mcp ? { id, description: v('.ed'), url: v('.eu').trim(), token: etm === 'none' ? '' : v('.et').trim(), token_mode: etm } : { id, text: v('.ex') };
       const s = await api.rpc('POST', 'edit', body).catch((x) => ({ out: String(x.message || x) }));
       e.target.disabled = false;
       if (!s.ok) { slot.querySelector('.nst').textContent = s.out; return; }

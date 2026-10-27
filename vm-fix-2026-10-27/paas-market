@@ -18,7 +18,9 @@ they want to their own ~/.claude (names stay as they are: /morning-check, not /p
   paas-market pull | disconnect          refresh it now / back to this VM's own marketplace
 root only:
   paas-market publish <brain/claude dir> [--mcp mcp.json]   (re)build the marketplace from the brain in this repo
-  paas-market setup-mcp <name> <url> [<token>]             set where an MCP server is (everyone can then add it)
+  paas-market setup-mcp <name> <url> [shared|personal|none]  set where an MCP server is; the token: shared = one
+                                                           for everyone (on stdin), personal = each person adds
+                                                           their own when they add it, none = no token
   paas-market import-mcp [<item>=<your server>...]        set up the marketplace's MCP items from your own Claude's
                                                            servers of the same name (or the names you map)
 
@@ -179,9 +181,12 @@ def share(ids):
                            name + {"skill": "", "agent": ".md", "mcp": ".json"}[kind])
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         if kind == "mcp":
-            old_desc = json.load(open(dst)).get("description", "") if os.path.exists(dst) else ""
-            json.dump({"description": os.environ.get("PAAS_DESCRIPTION", "").strip() or old_desc or f"MCP server {name}",
-                       "server": cfg}, open(dst, "w"), indent=2)
+            old = json.load(open(dst)) if os.path.exists(dst) else {}
+            mode = os.environ.get("PAAS_TOKEN_MODE") or old.get("token") or ("shared" if cfg.get("headers") else "none")
+            if mode != "shared":                     # personal / none: your token stays in your own Claude only
+                cfg = {k: v for k, v in cfg.items() if k != "headers"}
+            json.dump({"description": os.environ.get("PAAS_DESCRIPTION", "").strip() or old.get("description") or f"MCP server {name}",
+                       "token": mode, "server": cfg}, open(dst, "w"), indent=2)
         elif kind == "skill":
             shutil.rmtree(dst, ignore_errors=True)
             shutil.copytree(src, dst, ignore=shutil.ignore_patterns(".user-skill", "*.bak"))
@@ -240,7 +245,11 @@ def new_item(kind, name):
         if not re.match(r"^https?://[\w.-]+(:\d+)?(/\S*)?$", url):
             sys.exit("paas-market: the address must look like http://host:8000/mcp")
         token = str(d.get("token", "")).strip()
-        cfg = {"type": "http", "url": url, **({"headers": {"Authorization": f"Bearer {token}"}} if token else {})}
+        mode = d.get("token_mode") or ("shared" if token else "none")
+        if mode not in TOKEN_MODES or (mode == "shared" and not token):
+            sys.exit("paas-market: token: shared (give the token everyone uses), personal or none")
+        os.environ["PAAS_TOKEN_MODE"] = mode
+        cfg = {"type": "http", "url": url, **({"headers": {"Authorization": f"Bearer {token}"}} if token and mode != "none" else {})}
         r = mcp_cmd("add-json", "-s", "user", name, json.dumps(cfg))
         if r.returncode:
             sys.exit(f"paas-market: could not add MCP server {name}: {(r.stderr or r.stdout).strip()}")
@@ -261,8 +270,8 @@ def show(kind, name):
     if kind == "mcp":
         cfg = own_mcp(name) or {}
         dst = os.path.join(MARKET, "contrib", getpass.getuser(), "mcp", name + ".json")
-        desc = json.load(open(dst)).get("description", "") if os.path.exists(dst) else ""
-        print(json.dumps({"description": desc, "url": cfg.get("url", ""),
+        shared = json.load(open(dst)) if os.path.exists(dst) else {}
+        print(json.dumps({"description": shared.get("description", ""), "url": cfg.get("url", ""), "token_mode": token_mode(shared),
                           "has_token": "Authorization" in cfg.get("headers", {})}))
     else:
         print(open(os.path.join(own_path(kind, name), "SKILL.md") if kind == "skill" else own_path(kind, name)).read(), end="")
@@ -282,7 +291,14 @@ def edit(kind, name):
             sys.exit("paas-market: the address must look like http://host:8000/mcp")
         old = own_mcp(name) or {}
         token = str(d.get("token", "")).strip()
-        headers = {"Authorization": f"Bearer {token}"} if token else old.get("headers", {})
+        cur = os.path.join(MARKET, "contrib", getpass.getuser(), "mcp", name + ".json")
+        mode = d.get("token_mode") or token_mode(json.load(open(cur)) if os.path.exists(cur) else {})
+        if mode not in TOKEN_MODES:
+            sys.exit("paas-market: token: shared, personal or none")
+        os.environ["PAAS_TOKEN_MODE"] = mode
+        headers = {} if mode == "none" else {"Authorization": f"Bearer {token}"} if token else old.get("headers", {})
+        if mode == "shared" and not headers:
+            sys.exit("paas-market: a shared token is needed (or: personal, none)")
         cfg = {"type": "http", "url": url, **({"headers": headers} if headers else {})}
         mcp_cmd("remove", "-s", "user", name)
         r = mcp_cmd("add-json", "-s", "user", name, json.dumps(cfg))
@@ -355,11 +371,14 @@ def listing(words=None):
         if words and not all(w.lower() in f"{it['name']} {it['description']} {it['kind']}".lower() for w in words):
             continue
         have = state.get(key)
-        mcp = json.load(open(it.get("path") or item_path("mcp", it["name"])))["server"] if it["kind"] == "mcp" else {}
+        mcp_entry = json.load(open(it.get("path") or item_path("mcp", it["name"]))) if it["kind"] == "mcp" else {}
+        mcp = mcp_entry.get("server", {})
         out.append({**it, "id": key, "added": bool(have) or already_have(it["kind"], it["name"]),
                     "update": bool(have and have != it["version"]),
-                    "ready": it["kind"] != "mcp" or mcp_ready({"server": mcp}),
-                    "local": it["kind"] == "mcp" and mcp.get("type", "stdio") == "stdio"})   # runs on this VM: no address
+                    "ready": it["kind"] != "mcp" or mcp_ready(mcp_entry),
+                    "local": it["kind"] == "mcp" and mcp.get("type", "stdio") == "stdio",   # runs on this VM: no address
+                    **({"token_mode": token_mode(mcp_entry), "url": "" if "HOST" in mcp.get("url", "") else mcp.get("url", "")}
+                       if it["kind"] == "mcp" else {})})
     return out
 
 
@@ -373,24 +392,43 @@ def parse_ids(args):
     return ids
 
 
+TOKEN_MODES = ("shared", "personal", "none")
+
+
+def token_mode(entry):
+    """shared: root's one token for everyone; personal: each person their own; none: no token"""
+    return entry.get("token") or ("shared" if entry.get("server", {}).get("headers") else "none")
+
+
 def mcp_ready(entry):
-    """An MCP item can be added once root replaced the HOST / TOKEN placeholders."""
+    """An MCP item can be added once root replaced the HOST (and, for a shared token, the TOKEN) placeholder."""
     cfg = entry.get("server", {})
-    return "HOST" not in cfg.get("url", "") and "TOKEN" not in json.dumps(cfg.get("headers", {}))
+    return "HOST" not in cfg.get("url", "") and not (token_mode(entry) == "shared" and "TOKEN" in json.dumps(cfg.get("headers", {})))
 
 
-def setup_mcp(name, url, token):
-    """root: set the address (and bearer token) of an MCP item, for everyone who adds it from now on."""
+def read_secret(prompt):
+    """a token from stdin (the UI sends it there, never on the command line), or typed at a terminal"""
+    if sys.stdin.isatty():
+        return getpass.getpass(prompt).strip()
+    return sys.stdin.read().strip()
+
+
+def setup_mcp(name, url, token, mode="shared"):
+    """root: set the address of an MCP item and how its token works, for everyone who adds it from now on."""
     p = item_path("mcp", name)
     if not os.path.exists(p):
         sys.exit(f"paas-market: mcp/{name} is not in the marketplace")
     if not re.match(r"^https?://[\w.-]+(:\d+)?(/\S*)?$", url):
         sys.exit("paas-market: the address must look like http://host:8000/mcp")
+    if mode == "shared" and not token:
+        sys.exit("paas-market: a shared token is needed (or: personal = each person their own, none = no token)")
     entry = json.load(open(p))
-    entry["server"] = {"type": "http", "url": url, **({"headers": {"Authorization": f"Bearer {token}"}} if token else {})}
+    entry["token"] = mode
+    entry["server"] = {"type": "http", "url": url,
+                       **({"headers": {"Authorization": f"Bearer {token}"}} if mode == "shared" else {})}
     json.dump(entry, open(p, "w"), indent=2)
     reindex()
-    print(f"mcp/{name} set up: {url}")
+    print(f"mcp/{name} set up: {url} ({ {'shared': 'one token for everyone', 'personal': 'each person adds their own token', 'none': 'no token'}[mode] })")
 
 
 def import_mcp(pairs):
@@ -414,6 +452,7 @@ def import_mcp(pairs):
         p = item_path("mcp", item)
         entry = json.load(open(p))
         entry["server"] = mine[src]
+        entry.pop("token", None)                       # the token type follows root's server again (shared / none)
         json.dump(entry, open(p, "w"), indent=2)
         print(f"set up mcp/{item} from your '{src}'")
         done += 1
@@ -446,7 +485,7 @@ def plugin_cmd(action, name):
     print(f"{action} plugin/{name}: done")
 
 
-def add(ids, quiet=False):
+def add(ids, quiet=False, token=None):
     index = {(i["kind"], i["name"]): i for i in load_index()}
     state = load_state()
     for kind, name in ids:
@@ -470,9 +509,15 @@ def add(ids, quiet=False):
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(src, dst)
         else:
-            cfg = json.load(open(src))["server"]
-            if not mcp_ready({"server": cfg}):
+            entry = json.load(open(src))
+            cfg = entry["server"]
+            if not mcp_ready(entry):
                 sys.exit(f"paas-market: mcp/{name} is not set up yet: root sets its address in the marketplace")
+            if token_mode(entry) == "personal":
+                t = token if token is not None else read_secret(f"your token for {name} (Enter: keep yours, or none): ")
+                old = own_mcp(name) or {}
+                headers = {"Authorization": f"Bearer {t}"} if t else old.get("headers", {})   # update keeps yours
+                cfg = {**cfg, **({"headers": headers} if headers else {})}
             mcp_cmd("remove", "-s", "user", name)
             r = mcp_cmd("add-json", "-s", "user", name, json.dumps(cfg))
             if r.returncode:
@@ -515,7 +560,7 @@ def remove(ids):
 
 def update():
     todo = [tuple(i["id"].split("/", 1)) for i in listing() if i["update"]]
-    add(todo)
+    add(todo, token="")                                # personal tokens: everyone keeps theirs
     if not todo:
         print("everything is up to date")
 
@@ -526,7 +571,7 @@ def defaults():
     except (OSError, ValueError):
         ids = []
     have = load_state()["installed"]
-    add(parse_ids([i for i in ids if i not in have]))
+    add(parse_ids([i for i in ids if i not in have]), token="")
 
 
 def publish(brain, mcp_file=None):
@@ -704,8 +749,12 @@ def main(argv):
         publish(args[0], mcp)
     elif cmd == "setup-mcp":
         if len(args) < 2:
-            sys.exit("usage: paas-market setup-mcp <name> <url> [<bearer token>]   (root)")
-        setup_mcp(args[0], args[1], args[2] if len(args) > 2 else "")
+            sys.exit("usage: paas-market setup-mcp <name> <url> [shared|personal|none]   (root; a shared token on stdin)")
+        mode = args[2] if len(args) > 2 else "none"     # no third argument: no token (as before)
+        if mode not in TOKEN_MODES:                    # older form: setup-mcp <name> <url> <token>
+            setup_mcp(args[0], args[1], mode, "shared")
+        else:
+            setup_mcp(args[0], args[1], read_secret("shared token: ") if mode == "shared" else "", mode)
     elif cmd == "import-mcp":
         if os.geteuid() != 0:
             sys.exit("paas-market: import-mcp is for root")
