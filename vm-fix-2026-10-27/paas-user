@@ -131,6 +131,7 @@ case "$cmd" in
     u=${1:-}; valid "$u"; [ "$u" != root ] || die "root cannot be removed"
     systemctl disable --now "paas-ui@$u" >/dev/null 2>&1 || true
     rm -f "$ETC/$u.env"
+    rm -rf "$P/marketplace/contrib/$u"                        # what they shared leaves the marketplace (copies people added stay)
     if [ "${2:-}" = --delete-home ]; then userdel -r "$u" 2>/dev/null || true; else userdel "$u" 2>/dev/null || true; fi
     echo "removed $u${2:+ (home deleted)}" ;;
   provision)

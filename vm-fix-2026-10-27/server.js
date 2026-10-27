@@ -40,6 +40,7 @@ const routes = {
     return market(['new', b.kind, b.name], JSON.stringify(Object.fromEntries(keep.map((k) => [k, String(b[k] ?? '')]))));
   },
   // edit what you created: show gives the text (MCP: description + address, never the token), edit saves and re-shares it
+  'POST /view': async (b) => (ID.test(String(b.id)) ? market(['view', b.id]) : { ok: false, out: 'Unknown item' }),
   'POST /show': async (b) => (ID.test(String(b.id)) ? market(['show', b.id]) : { ok: false, out: 'Unknown item' }),
   'POST /edit': async (b) => {
     if (!ID.test(String(b.id))) return { ok: false, out: 'Unknown item' };

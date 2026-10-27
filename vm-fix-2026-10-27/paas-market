@@ -12,6 +12,7 @@ they want to their own ~/.claude (names stay as they are: /morning-check, not /p
   paas-market share <kind>/<name>...     put your own skill / agent into the marketplace for others (again = update)
   paas-market unshare <kind>/<name>...   take it out again (people who added it keep their copy)
   paas-market new <kind> <name>          create a skill / agent / MCP server (JSON on stdin) and share it
+  paas-market view <kind>/<name>         read any item before adding it (MCP: without its token)
   paas-market show <kind>/<name>         print one you shared (skill / agent file; MCP: JSON without the token)
   paas-market edit <kind>/<name>         replace it from stdin (same forms as show; MCP: a blank token keeps it), re-shared
   paas-market connect <https://vm:3443> <token>   use another VM's marketplace (read-only; refreshed every 10 min)
@@ -356,6 +357,35 @@ def already_have(kind, name):
     return kind == "mcp" and own_mcp(name) is not None
 
 
+def risky(it):
+    """someone else's skill / agent that grants tools without asking (allowed-tools), runs hooks, or ships scripts"""
+    if not it.get("author") or it["author"] == getpass.getuser() or it["kind"] not in ("skill", "agent"):
+        return ""
+    p = it["path"]
+    fm = frontmatter(open(os.path.join(p, "SKILL.md") if it["kind"] == "skill" else p).read())
+    why = [k for k in ("allowed-tools", "hooks") if k in fm]
+    if it["kind"] == "skill" and any(not f.endswith(".md") for _, _, fs in os.walk(p) for f in fs):
+        why.append("scripts")
+    return ", ".join(why)
+
+
+def view(kind, name):
+    """print any item, read-only (MCP: without its token)"""
+    it = next((i for i in load_index() if i["kind"] == kind and i["name"] == name), None)
+    if not it or kind == "plugin":
+        sys.exit(f"paas-market: {kind}/{name} is not in the marketplace")
+    p = it.get("path") or item_path(kind, name)
+    if kind == "mcp":
+        e = json.load(open(p))
+        e["server"] = {k: v for k, v in e.get("server", {}).items() if k != "headers"}
+        return print(json.dumps(e, indent=2))
+    print(open(os.path.join(p, "SKILL.md") if kind == "skill" else p).read(), end="")
+    if kind == "skill":
+        extra = sorted(os.path.relpath(os.path.join(r, f), p) for r, _, fs in os.walk(p) for f in fs if f != "SKILL.md")
+        if extra:
+            print("\n--- other files in this skill: " + ", ".join(extra))
+
+
 def listing(words=None):
     state = load_state()["installed"]
     plugins = installed_plugins() if os.path.isdir(PLUGINS) else {}
@@ -375,7 +405,7 @@ def listing(words=None):
         mcp = mcp_entry.get("server", {})
         out.append({**it, "id": key, "added": bool(have) or already_have(it["kind"], it["name"]),
                     "update": bool(have and have != it["version"]),
-                    "ready": it["kind"] != "mcp" or mcp_ready(mcp_entry),
+                    "ready": it["kind"] != "mcp" or mcp_ready(mcp_entry), "risky": risky(it),
                     "local": it["kind"] == "mcp" and mcp.get("type", "stdio") == "stdio",   # runs on this VM: no address
                     **({"token_mode": token_mode(mcp_entry), "url": "" if "HOST" in mcp.get("url", "") else mcp.get("url", "")}
                        if it["kind"] == "mcp" else {})})
@@ -559,9 +589,13 @@ def remove(ids):
 
 
 def update():
-    todo = [tuple(i["id"].split("/", 1)) for i in listing() if i["update"]]
+    rows = listing()
+    todo = [tuple(i["id"].split("/", 1)) for i in rows if i["update"] and not i.get("author")]
+    others = [i["id"] for i in rows if i["update"] and i.get("author")]
+    if others:                                         # someone else's change: look at it, then its own Update button
+        print(f"not updated (shared by people, update each after a look): {', '.join(others)}")
     add(todo, token="")                                # personal tokens: everyone keeps theirs
-    if not todo:
+    if not todo and not others:
         print("everything is up to date")
 
 
@@ -725,6 +759,11 @@ def main(argv):
         if len(args) != 2:
             sys.exit("usage: paas-market new <skill|agent|mcp> <name>   (details as JSON on stdin)")
         new_item(args[0], args[1])
+    elif cmd == "view":
+        ids = parse_ids(args)
+        if len(ids) != 1:
+            sys.exit("usage: paas-market view <kind>/<name>")
+        view(*ids[0])
     elif cmd in ("show", "edit"):
         ids = parse_ids(args)
         if len(ids) != 1:

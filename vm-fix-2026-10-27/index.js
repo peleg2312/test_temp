@@ -71,12 +71,13 @@ export function mount(container, api) {
     const shown = items.filter((i) => (kind === 'all' || (kind === 'have' ? i.added || (i.author && i.author === me) : i.kind === kind))
       && words.every((w) => `${i.name} ${i.description} ${KIND[i.kind]}`.toLowerCase().includes(w)));
     grid.innerHTML = shown.map((i) => { const mine = i.author && i.author === me; return `<div class="item${i.added || mine ? ' have' : ''}" data-id="${esc(i.id)}">
-      <div><span class="tag">${KIND[i.kind]}</span>${mine ? '<span class="tag have">yours</span>' : i.author ? `<span class="tag">by ${esc(i.author)}</span>` : ''}${i.added ? '<span class="tag have">added</span>' : ''}${i.added && i.kind === 'plugin' && !i.enabled ? '<span class="tag upd">off</span>' : ''}${i.update ? '<span class="tag upd">update</span>' : ''}${i.ready ? '' : '<span class="tag upd">not set up</span>'}${i.token_mode === 'personal' ? '<span class="tag">own token</span>' : ''}</div>
+      <div><span class="tag">${KIND[i.kind]}</span>${mine ? '<span class="tag have">yours</span>' : i.author ? `<span class="tag">by ${esc(i.author)}</span>` : ''}${i.added ? '<span class="tag have">added</span>' : ''}${i.added && i.kind === 'plugin' && !i.enabled ? '<span class="tag upd">off</span>' : ''}${i.update ? '<span class="tag upd">update</span>' : ''}${i.ready ? '' : '<span class="tag upd">not set up</span>'}${i.token_mode === 'personal' ? '<span class="tag">own token</span>' : ''}${i.risky ? `<span class="tag upd" title="${esc(i.risky)}">runs commands</span>` : ''}</div>
       <div class="t">${i.kind === 'skill' ? '/' : ''}${esc(i.name)}</div><div class="d" title="${esc(i.description)}">${esc(i.description)}</div>
       <div class="acts">${mine ? '<button class="ghost" data-a="edit">Edit</button><button class="ghost" data-a="unshare">Unshare</button>'
         : `${i.added && i.kind === 'plugin' ? `<button class="ghost" data-a="toggle" data-on="${i.enabled ? 0 : 1}">${i.enabled ? 'Turn off' : 'Turn on'}</button>` : ''}${i.added ? `<button class="ghost" data-a="remove">Remove</button>${i.update ? '<button class="go" data-a="add">Update</button>' : ''}`
         : i.ready ? '<button class="go" data-a="add">Add</button>' : `<span class="sub">${root ? '' : 'Root sets its address first'}</span>`}
-        ${root && i.kind === 'mcp' && !i.author && !i.local ? '<button class="ghost" data-a="setup">Set up</button>' : ''}`}</div>
+        ${root && i.kind === 'mcp' && !i.author && !i.local ? '<button class="ghost" data-a="setup">Set up</button>' : ''}
+        ${i.kind !== 'plugin' ? '<button class="ghost" data-a="view">View</button>' : ''}`}</div>
     </div>`; }).join('') || `<div class="empty">${items.length ? 'Nothing matches' : 'The marketplace is empty'}</div>`;
     grid.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => act(b.closest('.item'), b.dataset.a, b)));
   }
@@ -118,6 +119,17 @@ export function mount(container, api) {
       return;
     }
     if (a === 'edit') { editForm(id); return; }
+    if (a === 'view') {
+      const v = await api.rpc('POST', 'view', { id }).catch((e) => ({ out: String(e.message || e) }));
+      slot.innerHTML = `<div class="item nf"><div><div class="t">${esc(id)}${it.author ? ` <span class="sub">shared by ${esc(it.author)}</span>` : ''}</div>
+        ${it.risky ? `<div class="sub" style="color:#d97706">Runs commands or uses tools without asking (${esc(it.risky)}): read it before you add it.</div>` : ''}</div>
+        <textarea class="ex" rows="18" readonly spellcheck="false"></textarea><div class="acts"><button class="ghost ec">Close</button></div></div>`;
+      slot.querySelector('.ex').value = v.ok ? v.out : v.out || 'Could not read it';
+      slot.querySelector('.ec').addEventListener('click', () => { slot.innerHTML = ''; });
+      slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (a === 'add' && it.author && it.author !== me && !window.confirm(`${id} was shared by ${it.author}${it.risky ? ` and runs commands or uses tools without asking (${it.risky})` : ''}. It works with your permissions. Add it?`)) return;
     if (a === 'unshare' && !window.confirm(`Take ${id} out of the marketplace? People who added it keep their copy.`)) return;
     btn.disabled = true;
     const r = await api.rpc('POST', a, { ids: [id], on: btn.dataset.on === '1' }).catch((e) => ({ out: String(e.message || e) }));
