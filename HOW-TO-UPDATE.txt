@@ -1,0 +1,16 @@
+Storage brain update e329c62 -> 2b433c1, with the web UI bundle (the context counter in the message box is back)
+=====================================================================================================
+
+1. Download the 4 parts: storage-brain-update-2b433c1-with-ui.zip.part-aa storage-brain-update-2b433c1-with-ui.zip.part-ab storage-brain-update-2b433c1-with-ui.zip.part-ac storage-brain-update-2b433c1-with-ui.zip.part-ad 
+2. Join them into the zip (on the PC or on the VM):
+     Linux / Mac:   cat storage-brain-update-2b433c1-with-ui.zip.part-* > storage-brain-update-2b433c1-with-ui.zip
+     Windows cmd:   copy /b storage-brain-update-2b433c1-with-ui.zip.part-aa+storage-brain-update-2b433c1-with-ui.zip.part-ab+storage-brain-update-2b433c1-with-ui.zip.part-ac+storage-brain-update-2b433c1-with-ui.zip.part-ad storage-brain-update-2b433c1-with-ui.zip
+3. Check it: sha256 of the zip must be
+     97e06944f4a40b696bdf887a189ed3b7b5cb16bb78a1e43ca0a07a02a57ba5f9
+     Linux: sha256sum storage-brain-update-2b433c1-with-ui.zip      Windows PowerShell: Get-FileHash storage-brain-update-2b433c1-with-ui.zip
+4. On the VM, as root:
+     unzip storage-brain-update-2b433c1-with-ui.zip
+     sh update-e329c62-2b433c1/apply-update.sh /path/to/storage-mcp-servers
+     cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
+     systemctl restart 'paas-ui@*'
+   Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
