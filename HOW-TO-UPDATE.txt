@@ -1,20 +1,21 @@
-Storage brain update 2b433c1 -> 0675fca
+Storage brain update 2b433c1 -> 38c9064
 =======================================
 For a VM that already has the 2b433c1 update (storage-brain-update-2b433c1-with-ui.zip). No new web UI bundle needed.
 What is in it:
-  - PowerPoint decks: the make-deck skill (designed, editable .pptx; themes or the company template)
+  - PowerPoint decks: the make-deck skill (designed, editable .pptx; themes or the company template), with a bold style,
+    41 built-in icons, charts with target lines and labelled series, tables with status colours, heat and totals
   - Opus (1M context) selectable again in the web UI and /model; the default stays plain Opus
   - The regular model's context window (when chats are summarised): Users tab "Chat context window", or paas-user context
   - The compaction summary is shown as the summary, no longer as a message you sent
   - Sign-in page: no false "Caps Lock is on"
 
-1. Download storage-brain-update-0675fca.zip (24 MB).
+1. Download storage-brain-update-38c9064.zip (24 MB).
 2. Check it: SHA-256 must be
-     88fa4f0d548046b765c08bbf94c2ed83b9a18245c4973db0c8a8702255059d57
-     Linux: sha256sum storage-brain-update-0675fca.zip      Windows PowerShell: Get-FileHash storage-brain-update-0675fca.zip
+     3476f16e998bd6e11e1292b2ca8e639a50d13d5b8afe0ae26f301e90929a70d2
+     Linux: sha256sum storage-brain-update-38c9064.zip      Windows PowerShell: Get-FileHash storage-brain-update-38c9064.zip
 3. On the VM, as root:
-     unzip storage-brain-update-0675fca.zip
-     sh update-2b433c1-0675fca/apply-update.sh /path/to/storage-mcp-servers
+     unzip storage-brain-update-38c9064.zip
+     sh update-2b433c1-38c9064/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
      systemctl restart 'paas-ui@*'
    Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
@@ -23,6 +24,7 @@ What is in it:
 5. Checks:
      grep -c DISABLE_1M /etc/claude-code/managed-settings.json        -> 0
      python3 ~/.claude/tools/deck.py --example > /tmp/ex.json && python3 ~/.claude/tools/deck.py /tmp/ex.json   -> "checks: ok"
+     python3 ~/.claude/tools/deck.py /tmp/ex.json --style bold                                                    -> the bold version
    In the web UI: the model picker shows "Opus (1M context)"; a new chat's default is Opus.
    Optional preview images for decks: dnf install libreoffice-impress poppler-utils
 
