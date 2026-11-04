@@ -1,6 +1,6 @@
-Storage brain update 2b433c1 -> 0f05dc7
+Storage brain update 2b433c1 -> 005b6ab
 =======================================
-For a VM that already has the 2b433c1 update (storage-brain-update-2b433c1-with-ui.zip). No new web UI bundle needed.
+For a VM that has the 2b433c1 update, or any later zip from this repository (safe to apply over it) (storage-brain-update-2b433c1-with-ui.zip). No new web UI bundle needed.
 What is in it:
   - PowerPoint decks (make-deck skill): designed, editable .pptx; clean or bold style, 41 icons, charts with target lines
     and labelled series, tables with status colours / heat / totals; every deck its own look (layouts, palette, fonts),
@@ -9,15 +9,16 @@ What is in it:
   - The regular model's context window (when chats are summarised): Users tab "Chat context window", or paas-user context
   - The compaction summary is shown as the summary, no longer as a message you sent
   - Sign-in page: no false "Caps Lock is on"
+  - deck.py finds python-pptx in the shared devtools venv; root's old ~/.claude/tools folder is replaced by the shared one
 
-1. Download storage-brain-update-0f05dc7.zip (24 MB).
+1. Download storage-brain-update-005b6ab.zip (24 MB).
 2. Check it: SHA-256 must be
-     1f856a988233a3ca46415dcde55d8d3c923a5f76947a4ce51d9d00f5b559a2b0
-     Linux: sha256sum storage-brain-update-0f05dc7.zip      Windows PowerShell: Get-FileHash storage-brain-update-0f05dc7.zip
-3. Copy it to the VM (e.g. WinSCP, or: scp storage-brain-update-0f05dc7.zip root@<vm>:/root/), then on the VM as root:
+     b79930b318905d8c1ff41664f2dfd5bdc15a61f9f566bf15e0ed27d27cfe1894
+     Linux: sha256sum storage-brain-update-005b6ab.zip      Windows PowerShell: Get-FileHash storage-brain-update-005b6ab.zip
+3. Copy it to the VM (e.g. WinSCP, or: scp storage-brain-update-005b6ab.zip root@<vm>:/root/), then on the VM as root:
      cd /root
-     unzip -o storage-brain-update-0f05dc7.zip
-     sh update-2b433c1-0f05dc7/apply-update.sh /path/to/storage-mcp-servers
+     unzip -o storage-brain-update-005b6ab.zip
+     sh update-2b433c1-005b6ab/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
      systemctl restart 'paas-ui@*'
    Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
