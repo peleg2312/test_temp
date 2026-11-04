@@ -1,37 +1,40 @@
-Storage brain update 2b433c1 -> 005b6ab
+Storage brain update 2b433c1 -> 3a59774
 =======================================
-For a VM that has the 2b433c1 update, or any later zip from this repository (safe to apply over it) (storage-brain-update-2b433c1-with-ui.zip). No new web UI bundle needed.
+For a VM on 2b433c1 or on any zip made since (863dd26, 0675fca, 38c9064, 0f05dc7, 005b6ab): each was checked to end up
+exactly at 3a59774. No new web UI bundle needed.
 What is in it:
-  - PowerPoint decks (make-deck skill): designed, editable .pptx; clean or bold style, 41 icons, charts with target lines
-    and labelled series, tables with status colours / heat / totals; every deck its own look (layouts, palette, fonts),
-    or the company template
+  - The "presentations" plugin, installed for everyone: the deck MCP server (deck_guide, deck_build, deck_read,
+    deck_icons, deck_deliver), the make-deck skill, the deck-designer agent and the /presentations:deck command, on the
+    deck renderer: editable .pptx, clean or bold style, a look of its own per deck, 41 icons, charts with target lines
+    and labelled series, tables with status colours / heat / totals, or the company template
   - Opus (1M context) selectable again in the web UI and /model; the default stays plain Opus
-  - The regular model's context window (when chats are summarised): Users tab "Chat context window", or paas-user context
+  - The regular model's context window: Users tab "Chat context window", or paas-user context
   - The compaction summary is shown as the summary, no longer as a message you sent
   - Sign-in page: no false "Caps Lock is on"
-  - deck.py finds python-pptx in the shared devtools venv; root's old ~/.claude/tools folder is replaced by the shared one
+  - Fixes: deck.py finds python-pptx in the shared venv; root's old ~/.claude/tools folder is replaced by the shared one
 
-1. Download storage-brain-update-005b6ab.zip (24 MB).
+1. Download storage-brain-update-3a59774.zip (24 MB).
 2. Check it: SHA-256 must be
-     b79930b318905d8c1ff41664f2dfd5bdc15a61f9f566bf15e0ed27d27cfe1894
-     Linux: sha256sum storage-brain-update-005b6ab.zip      Windows PowerShell: Get-FileHash storage-brain-update-005b6ab.zip
-3. Copy it to the VM (e.g. WinSCP, or: scp storage-brain-update-005b6ab.zip root@<vm>:/root/), then on the VM as root:
+     ce2d8d10bbdae65733205c961f567a29965bb0a2f48fd69d7693ab8612da70db
+     Windows PowerShell: Get-FileHash storage-brain-update-3a59774.zip      Linux: sha256sum storage-brain-update-3a59774.zip
+3. Copy it to the VM (WinSCP, or: scp storage-brain-update-3a59774.zip root@<vm>:/root/), then on the VM as root:
      cd /root
-     unzip -o storage-brain-update-005b6ab.zip
-     sh update-2b433c1-005b6ab/apply-update.sh /path/to/storage-mcp-servers
+     unzip -o storage-brain-update-3a59774.zip
+     sh update-2b433c1-3a59774/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
      systemctl restart 'paas-ui@*'
    Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
-4. Context window (optional), as root:  paas-user context 300000     (or the Users tab; paas-user context prints it)
-   Set it no higher than the model behind the gateway really accepts. New sessions use it.
-5. Checks:
-     grep -c DISABLE_1M /etc/claude-code/managed-settings.json        -> 0
-     /opt/paas/devtools-venv/bin/python -c "import pptx; print('python-pptx', pptx.__version__)"
-     python3 ~/.claude/tools/deck.py --example > /tmp/ex.json && python3 ~/.claude/tools/deck.py /tmp/ex.json    -> "checks: ok" and a "look:" line
-     python3 ~/.claude/tools/deck.py /tmp/ex.json --look random                                                  -> another design
-   In the web UI: the model picker shows "Opus (1M context)"; a new chat's default is Opus.
-   Optional preview images for decks: dnf install libreoffice-impress poppler-utils
-6. Use: in a new chat, "make a presentation of ...". A look you liked: "use look 1234 again". Company look: give the path
-   of the company .pptx / .potx once.
+4. Checks (as root, then as one normal user):
+     claude plugin list | grep -A3 presentations                -> presentations@brain-dev ... enabled
+     claude mcp list | grep deck                                -> plugin:presentations:deck ... Connected
+     ls -ld ~/.claude/tools                                     -> ... -> /opt/paas/tools
+     grep -c DISABLE_1M /etc/claude-code/managed-settings.json  -> 0
+   Not listed for a user? In the web UI: Market tab -> Plugins -> presentations -> Add (or: paas-market add plugin/presentations).
+5. Use, in a new chat:
+     /presentations:deck SAN capacity review for management
+     or just: "make a presentation of ..."      a design you liked: "use look 1234 again"
+   Company look: give the path of the company .pptx / .potx once. Decks land in ~/storage-reports/<date>-<title>/.
+6. Optional: paas-user context 300000 (a larger chat window for the regular model); deck preview images:
+     dnf install libreoffice-impress poppler-utils
 
 Older: storage-brain-update-2b433c1-with-ui.zip (e329c62 -> 2b433c1, with the web UI) for a VM before 2b433c1.
