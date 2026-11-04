@@ -1,8 +1,8 @@
-Storage brain update 2b433c1 -> b7012cb: the Flashback team (backup and restore), brain + library
+Storage brain update 2b433c1 -> 181b56f: the Flashback team (backup and restore), brain + library
 ==================================================================================================
 Two downloads:
-  storage-brain-update-b7012cb.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774: checked
-                                       to end up exactly at b7012cb; no new web UI bundle needed)
+  storage-brain-update-181b56f.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and b7012cb: checked
+                                       to end up exactly at 181b56f; no new web UI bundle needed)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
 What you get
@@ -23,14 +23,14 @@ What you get
   - paas-library import (load a prebuilt library tarball)
 
 1. Check both downloads:
-     storage-brain-update-b7012cb.zip (24 MB)         SHA-256 c249cb131d00e23073953a868f738baca35af2bec17de524375afdbfb12de05e
+     storage-brain-update-181b56f.zip (24 MB)         SHA-256 3c5b31299bef2da7134995053fad8ca8ce32a4b25799dda4df7d1234c13735cc
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-b7012cb.zip
-     sh update-2b433c1-b7012cb/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-181b56f.zip
+     sh update-2b433c1-181b56f/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
      systemctl restart 'paas-ui@*'
 3. The library (as root):
@@ -44,8 +44,12 @@ What you get
      commvault-env1 / -env2 / -env3: url http://<host>:<port>/mcp, header Authorization = the secret your Commvault MCP
      setup stored (no "Bearer"). Use a view-only Commvault user. ontap / powermax / powerflex: same addresses and read-only
      tokens as the SAN team.
-6. Each member: Brain tab -> Team -> Flashback, new chat, then:
-     /paas-brain-flashback:brain-setup          (tool map; then fill environment.md: CommCell names and versions etc.)
+6. ONE person, once, after step 5 (both files are the team's: committed, every member gets them):
+     Brain tab -> Team -> Flashback, new chat:  /paas-brain-flashback:brain-setup
+     -> writes tool-map.md (exact tool names per server, what not to call) and fills environment.md from Commvault
+        (CommServe versions, MediaAgents, libraries, plans), oc on the MCE clusters (OADP version, DPA, BSL, Schedules,
+        hosted clusters) and the arrays; asks you for Veeam, RPO / RTO, thresholds. Re-run after adding / upgrading a server.
+   Everyone else: Brain tab -> Team -> Flashback, new chat, and use it.
    Try:  "morning check"   "why did job 123456 fail on env2"   "prepare a restore of database X on SQL AG Y to yesterday 22:00"
          "are the hosted cluster backups ok on mce-a"   "restore hosted cluster Z from the last good backup"
          "what does this Veeam error mean: <paste>"   "SnapMirror lag of the backup volumes"
