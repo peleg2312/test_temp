@@ -1,8 +1,8 @@
-Storage brain update 2b433c1 -> ff1a194: the Flashback team (backup and restore), brain + library
+Storage brain update 2b433c1 -> c21b1da: the Flashback team (backup and restore), brain + library
 ==================================================================================================
 Two downloads:
-  storage-brain-update-ff1a194.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 0947709: checked
-                                       to end up exactly at ff1a194; no new web UI bundle needed;
+  storage-brain-update-c21b1da.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and ff1a194: checked
+                                       to end up exactly at c21b1da; no new web UI bundle needed;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
@@ -30,19 +30,29 @@ What you get
     read-only guard blocks MCP and shell calls instead of letting them through (docs-http keeps working); the knowledge
     folders and files link without the Windows symlink right (junctions, hard links re-made after every pull)
   - Two people adding notes at the same moment no longer block each other's push (union merge in the team repository)
+  - Presentations (plugin "presentations" 1.1.0, for every team):
+      Hebrew decks read right to left by themselves: text, mirrored layouts (timelines, processes, panels), tables with the
+      first column on the right, fonts that have Hebrew letters (no more boxes), labels in Hebrew ("סדר היום", "נקודה מרכזית")
+      No text spills onto other text any more: every text is measured against its box, shrinks, or is cut with "..." and a warning
+      Long numbers stay on one line; long item titles push their text down; labels sit under their numbers
+      The model's mistakes are repaired, not drawn: wrong field names, lists given as one string, empty cards (dropped),
+      unknown or emoji icons (closest real icon), chart data as text, too many items (split over two slides)
+      Simpler guidance for a small model: deck_guide gives a Hebrew example to copy and short rules with character limits;
+      deck_build answers "fixed" (nothing to do) / "warnings" (change exactly this) / one "next" step
+    Try in a new chat:  "תכין מצגת להנהלה על מצב הגיבויים החודש"   or   /presentations:deck monthly backup review in Hebrew
   - Fixes for every team: laptops now get team plugin changes by themselves (the next session start installs the new
     version in the background, active from the session after; retried when GitLab does not answer); the team editor
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-ff1a194.zip (24 MB)         SHA-256 ecca7e9627566a2daafba8d078a27436ad492829ce5c22812258b0c57b2ede4c
+     storage-brain-update-c21b1da.zip (24 MB)         SHA-256 dd5c8e6f8aaa319fef4aeb2b0de476bb30cbe90a970d79379411963c0b12d759
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-ff1a194.zip
-     sh update-2b433c1-ff1a194/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-c21b1da.zip
+     sh update-2b433c1-c21b1da/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
       --docs-port 8443: the docs service moves to 8443, firewalld opens 8443 and closes 8001
