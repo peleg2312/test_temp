@@ -1,22 +1,29 @@
-Storage brain update 2b433c1 -> 863dd26: PowerPoint decks (the make-deck skill)
-================================================================================
-For a VM that already has the 2b433c1 update (storage-brain-update-2b433c1-with-ui.zip). No web UI change.
+Storage brain update 2b433c1 -> 0675fca
+=======================================
+For a VM that already has the 2b433c1 update (storage-brain-update-2b433c1-with-ui.zip). No new web UI bundle needed.
+What is in it:
+  - PowerPoint decks: the make-deck skill (designed, editable .pptx; themes or the company template)
+  - Opus (1M context) selectable again in the web UI and /model; the default stays plain Opus
+  - The regular model's context window (when chats are summarised): Users tab "Chat context window", or paas-user context
+  - The compaction summary is shown as the summary, no longer as a message you sent
+  - Sign-in page: no false "Caps Lock is on"
 
-1. Download storage-brain-update-863dd26-powerpoint.zip (24 MB).
+1. Download storage-brain-update-0675fca.zip (24 MB).
 2. Check it: SHA-256 must be
-     983a33906f4d5f0038d8f6cdbac46ade9bd7e5ca78e492f838a6ca26e6633a06
-     Linux: sha256sum storage-brain-update-863dd26-powerpoint.zip      Windows PowerShell: Get-FileHash storage-brain-update-863dd26-powerpoint.zip
+     88fa4f0d548046b765c08bbf94c2ed83b9a18245c4973db0c8a8702255059d57
+     Linux: sha256sum storage-brain-update-0675fca.zip      Windows PowerShell: Get-FileHash storage-brain-update-0675fca.zip
 3. On the VM, as root:
-     unzip storage-brain-update-863dd26-powerpoint.zip
-     sh update-2b433c1-863dd26/apply-update.sh /path/to/storage-mcp-servers
+     unzip storage-brain-update-0675fca.zip
+     sh update-2b433c1-0675fca/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
+     systemctl restart 'paas-ui@*'
    Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
-4. Check (as any user):
-     /opt/paas/devtools-venv/bin/python -c "import pptx; print('python-pptx', pptx.__version__)"
-     python3 ~/.claude/tools/deck.py --example > /tmp/ex.json && python3 ~/.claude/tools/deck.py /tmp/ex.json
-   It prints the path of a 14-slide deck in ~/storage-reports/ and "checks: ok".
-5. Use: in a new Claude session ask "make a presentation of ..." (skill make-deck). For the company look, give
-   Claude the path of the company .pptx / .potx once (it uses --template).
-   Optional preview images: dnf install libreoffice-impress poppler-utils, then Claude adds --preview.
+4. Context window (optional), as root:  paas-user context 300000     (or the Users tab; paas-user context prints it)
+   Set it no higher than the model behind the gateway really accepts. New sessions use it.
+5. Checks:
+     grep -c DISABLE_1M /etc/claude-code/managed-settings.json        -> 0
+     python3 ~/.claude/tools/deck.py --example > /tmp/ex.json && python3 ~/.claude/tools/deck.py /tmp/ex.json   -> "checks: ok"
+   In the web UI: the model picker shows "Opus (1M context)"; a new chat's default is Opus.
+   Optional preview images for decks: dnf install libreoffice-impress poppler-utils
 
 Older: storage-brain-update-2b433c1-with-ui.zip (e329c62 -> 2b433c1, with the web UI) for a VM before 2b433c1.
