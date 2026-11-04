@@ -1,8 +1,8 @@
-Storage brain update 2b433c1 -> 0498d9d: the Flashback team (backup and restore), brain + library
+Storage brain update 2b433c1 -> 0947709: the Flashback team (backup and restore), brain + library
 ==================================================================================================
 Two downloads:
-  storage-brain-update-0498d9d.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 78f170c: checked
-                                       to end up exactly at 0498d9d; no new web UI bundle needed;
+  storage-brain-update-0947709.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 0498d9d: checked
+                                       to end up exactly at 0947709; no new web UI bundle needed;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
@@ -23,24 +23,29 @@ What you get
     OADP on the MCE clusters, a Schedule per hosted cluster hourly with TTL 48h, PowerFlex CSI + data mover)
   - paas-library import (load a prebuilt library tarball)
   - Every team plugin now carries docs-http for laptops and other PCs (native HTTPS, works on Windows without Python)
-  - The docs service on port 8443 (install-multiuser.sh --docs-port 8443), and join.sh / join.ps1 in every team repository:
-    a new PC joins a team with one command
+  - The docs service on port 8443 (--docs-port 8443) and plain HTTP for the docs MCP and the marketplace (--plain-http):
+    a PC joins a team with the two plugin commands, no certificate
+  - Team notes now show up first in docs searches when they match (they were ranked under the library before)
   - Fixes for every team: laptops now get team plugin changes by themselves (the next session start installs the new
     version in the background, active from the session after; retried when GitLab does not answer); the team editor
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-0498d9d.zip (24 MB)         SHA-256 9bf18aacdd11d1461c82129a289827027f342027828c7533fac77cffc7e901a1
+     storage-brain-update-0947709.zip (24 MB)         SHA-256 90bf6d1f1311b85f4fefda9e021f0d2d7e465f27c49c8752b148ee6256a97f03
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-0498d9d.zip
-     sh update-2b433c1-0498d9d/apply-update.sh /path/to/storage-mcp-servers
-     cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443
-     (--docs-port once: the docs service moves to 8443, firewalld opens 8443 and closes 8001, every team plugin's docs-http
-      and the Market's docs items get the new address; later runs keep 8443 without the flag)
+     cd /root && unzip -o storage-brain-update-0947709.zip
+     sh update-2b433c1-0947709/apply-update.sh /path/to/storage-mcp-servers
+     cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
+     (both flags once, remembered after that:
+      --docs-port 8443: the docs service moves to 8443, firewalld opens 8443 and closes 8001
+      --plain-http: the docs MCP service (8443) and the marketplace for other VMs (3443) answer http:// instead of
+        https://; the token is still required, but nothing is encrypted on the network (the docs token and the teams'
+        notes could be read by someone capturing traffic). The sign-in page stays HTTPS. --https goes back.
+      Every team plugin's docs-http and the Market's docs items get the new http://<vm>:8443 address in the same run.)
      systemctl restart 'paas-ui@*'
 3. The library (as root):
      cd /root && unzip -o flashback-library-2026.11.04.zip
@@ -63,20 +68,30 @@ What you get
          "are the hosted cluster backups ok on mce-a"   "restore hosted cluster Z from the last good backup"
          "what does this Veeam error mean: <paste>"   "SnapMirror lag of the backup volumes"
 
-Laptops / other PCs: one command per PC (Claude Code and git installed; the person's own GitLab login)
-  Before: TCP 8443 open from the PCs to the VM (network firewall).
-  Windows (PowerShell, no admin; Windows asks once to confirm the certificate):
-     git clone <gitlab url of brain-flashback> brain-flashback
-     powershell -ExecutionPolicy Bypass -File .\brain-flashback\join.ps1
-  Linux / macOS:
-     git clone <gitlab url of brain-flashback> brain-flashback && sh brain-flashback/join.sh      (--no-sudo without sudo)
-  It trusts the VM's certificate, checks port 8443 and the docs service, installs the plugin, and checks that Claude Code
-  connects docs-http; each failed step says what to fix ("not reachable" = port 8443 closed; "certificate" = the VM name in
-  the url is not in its certificate). Then start claude. Updates reach the PC by themselves from then on.
-  A PC that has the plugin from before: just run the same join command (it updates the plugin to the new address).
-  docs-local on a PC needs Python 3 (team notes from the clone; the brain's session hooks need it too); docs-http does not.
-  Tested here on clean Linux machines against an HTTPS docs service on 8443 with a self-signed certificate (both the
-  system-store and the no-sudo path connect; a closed port is reported). join.ps1 could not be run here (no PowerShell).
+Laptops / other PCs / other VMs (with --plain-http: no certificate, no script)
+  Before: TCP 8443 open from the PCs to the VM. Claude Code and git on the PC, the person's own GitLab login.
+     claude plugin marketplace add <gitlab url of brain-flashback>
+     claude plugin install paas-brain-flashback@paas-brain-flashback
+     claude mcp list        ->  plugin:paas-brain-flashback:docs-http: http://<vm>:8443/mcp?team=flashback ... Connected
+     claude                 (the first session sets the team up: knowledge clone, rules, notes sync)
+  A PC that has the plugin from before: once  claude plugin marketplace update paas-brain-flashback
+     && claude plugin update paas-brain-flashback@paas-brain-flashback   (after that updates come by themselves)
+  Another VM's marketplace: paas-market connect http://<vm>:3443 <token>     (cat /etc/paas/market/token on this VM)
+  join.sh / join.ps1 still work (they now also check plain-http VMs: the port and the docs service), but are not needed.
+  The brain's session hooks and docs-local need Python 3 on the PC (python3 on PATH); docs-http does not.
+
+What was tested here, on clean machines with the real Claude CLI (docs service on plain HTTP 8443, a git-served team repo):
+  - machine A: only the two plugin commands -> docs-http Connected (no certificate), docs-local Connected
+  - first session: the team set up (knowledge clone, links, rules)
+  - a note written on A -> committed as A's person, pushed to the team repository, indexed by the VM's docs service
+    and found over docs-http (first in the results)
+  - machine B: the two commands + first session -> it has A's note
+  - an admin edit of the team (a Commvault server) -> machine A's next session start installs the new plugin in the
+    background; active from the session after
+  - the marketplace for other VMs over http: snapshot with the token, 401 without, paas-market connect http:// works
+Fixed on the way (affects every team): the VM's docs service refused to clone a team repository over http:// (GitLab
+without TLS), so team notes were never indexed for docs-http; and team notes were ranked under the library and cut off
+(two indexes' scores do not compare): a note that holds every word of the question now comes first.
 
 Library contents (MANIFEST.md inside): Commvault 11.36 (2024e) / 11.40 / 11.42 / 11.44 (databases incl. PostgreSQL, SQL
 Server + Always On, Oracle / RAC, Exchange, VMware, Kubernetes / etcd, S3, storage / libraries / MediaAgents, IntelliSnap
