@@ -1,40 +1,62 @@
-Storage brain update 2b433c1 -> 3a59774
-=======================================
-For a VM on 2b433c1 or on any zip made since (863dd26, 0675fca, 38c9064, 0f05dc7, 005b6ab): each was checked to end up
-exactly at 3a59774. No new web UI bundle needed.
-What is in it:
-  - The "presentations" plugin, installed for everyone: the deck MCP server (deck_guide, deck_build, deck_read,
-    deck_icons, deck_deliver), the make-deck skill, the deck-designer agent and the /presentations:deck command, on the
-    deck renderer: editable .pptx, clean or bold style, a look of its own per deck, 41 icons, charts with target lines
-    and labelled series, tables with status colours / heat / totals, or the company template
-  - Opus (1M context) selectable again in the web UI and /model; the default stays plain Opus
-  - The regular model's context window: Users tab "Chat context window", or paas-user context
-  - The compaction summary is shown as the summary, no longer as a message you sent
-  - Sign-in page: no false "Caps Lock is on"
-  - Fixes: deck.py finds python-pptx in the shared venv; root's old ~/.claude/tools folder is replaced by the shared one
+Storage brain update 2b433c1 -> b7012cb: the Flashback team (backup and restore), brain + library
+==================================================================================================
+Two downloads:
+  storage-brain-update-b7012cb.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774: checked
+                                       to end up exactly at b7012cb; no new web UI bundle needed)
+  flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
-1. Download storage-brain-update-3a59774.zip (24 MB).
-2. Check it: SHA-256 must be
-     ce2d8d10bbdae65733205c961f567a29965bb0a2f48fd69d7693ab8612da70db
-     Windows PowerShell: Get-FileHash storage-brain-update-3a59774.zip      Linux: sha256sum storage-brain-update-3a59774.zip
-3. Copy it to the VM (WinSCP, or: scp storage-brain-update-3a59774.zip root@<vm>:/root/), then on the VM as root:
-     cd /root
-     unzip -o storage-brain-update-3a59774.zip
-     sh update-2b433c1-3a59774/apply-update.sh /path/to/storage-mcp-servers
+What you get
+  - Team "flashback" (Brain tab -> Team -> Flashback), its own rules on top of the golden rules (B1-B9: backup software is
+    infrastructure - read-only; a restore is prepared as a runbook for you to run; a restore point is proven by job ID,
+    status, copy, retention and log chain; every CommCell / Veeam / OADP / storage layer checked or named as not checked)
+  - Skills: backup-morning-check, commvault-job-check, commvault-infra-check, backup-coverage, restore-plan, restore-drill,
+    veeam-job-check, oadp-backup-check, oadp-restore-hosted-cluster, snapshot-protection-check, docs-lookup (Flashback
+    library) + the shared ones (replication-check, k8s-volume-troubleshoot, explain-error, report-export, handover-note ...)
+  - Agents: commvault-analyst (one per CommCell, in parallel), veeam-analyst, oadp-analyst, storage-protection-analyst,
+    docs-researcher, Explore
+  - MCP: commvault-env1 / -env2 / -env3 (your official Commvault MCP server, one per CommCell), ontap, powermax, powerflex,
+    docs-local (the Flashback library). The guard blocks Commvault's kill / suspend / resume / resubmit / schedule tools and
+    asks before a manual backup; velero create / delete (also through oc exec) asks like oc create.
+  - environment.md pre-filled with what you told me (3 CommCells, 4-5 Windows physical MediaAgents per site, S3 + NetApp
+    CIFS/NFS libraries, CommServe DR, Command Center; 1 VBR 13.0.1 + Veeam ONE, Linux proxies, NetApp NFS repositories;
+    OADP on the MCE clusters, a Schedule per hosted cluster hourly with TTL 48h, PowerFlex CSI + data mover)
+  - paas-library import (load a prebuilt library tarball)
+
+1. Check both downloads:
+     storage-brain-update-b7012cb.zip (24 MB)         SHA-256 c249cb131d00e23073953a868f738baca35af2bec17de524375afdbfb12de05e
+     flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
+       (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
+        paas-library import checks it against the .sha256 next to it)
+     Windows: Get-FileHash <file>        Linux: sha256sum <file>
+2. Copy both to the VM (/root), then as root:
+     cd /root && unzip -o storage-brain-update-b7012cb.zip
+     sh update-2b433c1-b7012cb/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
      systemctl restart 'paas-ui@*'
-   Kept: ports, tokens, Market items, notes, skills, plugins, MCP servers. Safe to run twice.
-4. Checks (as root, then as one normal user):
-     claude plugin list | grep -A3 presentations                -> presentations@brain-dev ... enabled
-     claude mcp list | grep deck                                -> plugin:presentations:deck ... Connected
-     ls -ld ~/.claude/tools                                     -> ... -> /opt/paas/tools
-     grep -c DISABLE_1M /etc/claude-code/managed-settings.json  -> 0
-   Not listed for a user? In the web UI: Market tab -> Plugins -> presentations -> Add (or: paas-market add plugin/presentations).
-5. Use, in a new chat:
-     /presentations:deck SAN capacity review for management
-     or just: "make a presentation of ..."      a design you liked: "use look 1234 again"
-   Company look: give the path of the company .pptx / .potx once. Decks land in ~/storage-reports/<date>-<title>/.
-6. Optional: paas-user context 300000 (a larger chat window for the regular model); deck preview images:
-     dnf install libreoffice-impress poppler-utils
+3. The library (as root):
+     cd /root && unzip -o flashback-library-2026.11.04.zip
+     /opt/paas/bin/paas-library import flashback /root/flashback-library-2026.11.04.tar.gz
+     /opt/paas/bin/paas-library list                   -> flashback  31356 documents  218 MB ...   (about 30 s)
+4. The team repository: an empty GitLab project (e.g. storage/brain-flashback, branch main, members Developer), then:
+     python3 brain/teams/publish.py flashback --to /opt/paas/teams/flashback --remote <gitlab url>
+   (or re-run install-multiuser.sh with --team flashback=<gitlab url>; add the team's AD group to its --groups)
+5. Commvault MCP per CommCell: Brain tab -> Team -> More -> Edit a team (team flashback):
+     commvault-env1 / -env2 / -env3: url http://<host>:<port>/mcp, header Authorization = the secret your Commvault MCP
+     setup stored (no "Bearer"). Use a view-only Commvault user. ontap / powermax / powerflex: same addresses and read-only
+     tokens as the SAN team.
+6. Each member: Brain tab -> Team -> Flashback, new chat, then:
+     /paas-brain-flashback:brain-setup          (tool map; then fill environment.md: CommCell names and versions etc.)
+   Try:  "morning check"   "why did job 123456 fail on env2"   "prepare a restore of database X on SQL AG Y to yesterday 22:00"
+         "are the hosted cluster backups ok on mce-a"   "restore hosted cluster Z from the last good backup"
+         "what does this Veeam error mean: <paste>"   "SnapMirror lag of the backup volumes"
 
-Older: storage-brain-update-2b433c1-with-ui.zip (e329c62 -> 2b433c1, with the web UI) for a VM before 2b433c1.
+Library contents (MANIFEST.md inside): Commvault 11.36 (2024e) / 11.40 / 11.42 / 11.44 (databases incl. PostgreSQL, SQL
+Server + Always On, Oracle / RAC, Exchange, VMware, Kubernetes / etcd, S3, storage / libraries / MediaAgents, IntelliSnap
+NetApp / PowerMax / PowerFlex, CommServe DR / LiveSync, plans, monitoring, reports, REST API, PowerShell, upgrades);
+Veeam 13 (B&R user guide for vSphere / agents / databases incl. PostgreSQL / repositories, PowerShell reference, event
+IDs, what's new, Veeam ONE, Veeam Agent for Linux); OADP 1.4 / 1.5 / 1.6 (OCP 4.18 / 4.20 / 4.22 backup guides) and the
+hosted control planes guides; hypershift-oadp-plugin with its example DPA / Backup / Restore YAML; HyperShift DR docs;
+oadp-operator docs per branch; Velero 1.14 / 1.16 / 1.17; NetApp ONTAP data protection, KB, EMS, REST, Trident; PowerMax
+SnapVX / SRDF; PowerFlex guides; CSM / CSI PowerFlex; CSI external-snapshotter.
+Not in it: Commvault 11.38 (its site forbids fetching it; 11.36 and 11.40 cover it), Veeam pages for other hypervisors
+and clouds.
