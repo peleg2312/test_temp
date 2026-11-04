@@ -1,8 +1,9 @@
-Storage brain update 2b433c1 -> 78f170c: the Flashback team (backup and restore), brain + library
+Storage brain update 2b433c1 -> 0498d9d: the Flashback team (backup and restore), brain + library
 ==================================================================================================
 Two downloads:
-  storage-brain-update-78f170c.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774, b7012cb, 181b56f and 5ae53a6: checked
-                                       to end up exactly at 78f170c; no new web UI bundle needed)
+  storage-brain-update-0498d9d.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 78f170c: checked
+                                       to end up exactly at 0498d9d; no new web UI bundle needed;
+                                       the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
 What you get
@@ -22,20 +23,24 @@ What you get
     OADP on the MCE clusters, a Schedule per hosted cluster hourly with TTL 48h, PowerFlex CSI + data mover)
   - paas-library import (load a prebuilt library tarball)
   - Every team plugin now carries docs-http for laptops and other PCs (native HTTPS, works on Windows without Python)
+  - The docs service on port 8443 (install-multiuser.sh --docs-port 8443), and join.sh / join.ps1 in every team repository:
+    a new PC joins a team with one command
   - Fixes for every team: laptops now get team plugin changes by themselves (the next session start installs the new
     version in the background, active from the session after; retried when GitLab does not answer); the team editor
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-78f170c.zip (24 MB)         SHA-256 c87180d9ad7019abd77177ffe66a898e6802dabb80457e511bb211190e5f6f8a
+     storage-brain-update-0498d9d.zip (24 MB)         SHA-256 9bf18aacdd11d1461c82129a289827027f342027828c7533fac77cffc7e901a1
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-78f170c.zip
-     sh update-2b433c1-78f170c/apply-update.sh /path/to/storage-mcp-servers
-     cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
+     cd /root && unzip -o storage-brain-update-0498d9d.zip
+     sh update-2b433c1-0498d9d/apply-update.sh /path/to/storage-mcp-servers
+     cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443
+     (--docs-port once: the docs service moves to 8443, firewalld opens 8443 and closes 8001, every team plugin's docs-http
+      and the Market's docs items get the new address; later runs keep 8443 without the flag)
      systemctl restart 'paas-ui@*'
 3. The library (as root):
      cd /root && unzip -o flashback-library-2026.11.04.zip
@@ -58,19 +63,20 @@ What you get
          "are the hosted cluster backups ok on mce-a"   "restore hosted cluster Z from the last good backup"
          "what does this Veeam error mean: <paste>"   "SnapMirror lag of the backup volumes"
 
-Laptops / other PCs (optional): the team plugin now carries docs-http (the VM's docs service, native HTTPS, no Python needed)
-  1. TCP 8001 open from the PC to the VM
-  2. Trust the VM's certificate once (copy /etc/paas/tls/paas-ui.crt from the VM):
-       Windows PowerShell:  Import-Certificate -FilePath .\paas-ui.crt -CertStoreLocation Cert:\CurrentUser\Root
-       RHEL:   cp paas-ui.crt /etc/pki/ca-trust/source/anchors/ && update-ca-trust
-  3. claude plugin marketplace add <gitlab url of brain-flashback>
-     claude plugin install paas-brain-flashback@paas-brain-flashback
-  4. Check:  claude mcp list   ->  plugin:paas-brain-flashback:docs-http ... Connected
-     (Failed with SELF_SIGNED_CERT = step 2 missing; timeout = step 1)
-  A PC that already has the plugin: once  claude plugin marketplace update paas-brain-flashback
-     && claude plugin update paas-brain-flashback@paas-brain-flashback   (after that updates come by themselves)
-  docs-local on a PC needs Python 3 (it serves the team notes from the clone); docs-http does not. On the VM docs-http is
-  switched off by the managed settings (docs-local there has the same library), so nothing is listed twice.
+Laptops / other PCs: one command per PC (Claude Code and git installed; the person's own GitLab login)
+  Before: TCP 8443 open from the PCs to the VM (network firewall).
+  Windows (PowerShell, no admin; Windows asks once to confirm the certificate):
+     git clone <gitlab url of brain-flashback> brain-flashback
+     powershell -ExecutionPolicy Bypass -File .\brain-flashback\join.ps1
+  Linux / macOS:
+     git clone <gitlab url of brain-flashback> brain-flashback && sh brain-flashback/join.sh      (--no-sudo without sudo)
+  It trusts the VM's certificate, checks port 8443 and the docs service, installs the plugin, and checks that Claude Code
+  connects docs-http; each failed step says what to fix ("not reachable" = port 8443 closed; "certificate" = the VM name in
+  the url is not in its certificate). Then start claude. Updates reach the PC by themselves from then on.
+  A PC that has the plugin from before: just run the same join command (it updates the plugin to the new address).
+  docs-local on a PC needs Python 3 (team notes from the clone; the brain's session hooks need it too); docs-http does not.
+  Tested here on clean Linux machines against an HTTPS docs service on 8443 with a self-signed certificate (both the
+  system-store and the no-sudo path connect; a closed port is reported). join.ps1 could not be run here (no PowerShell).
 
 Library contents (MANIFEST.md inside): Commvault 11.36 (2024e) / 11.40 / 11.42 / 11.44 (databases incl. PostgreSQL, SQL
 Server + Always On, Oracle / RAC, Exchange, VMware, Kubernetes / etcd, S3, storage / libraries / MediaAgents, IntelliSnap
@@ -82,3 +88,7 @@ oadp-operator docs per branch; Velero 1.14 / 1.16 / 1.17; NetApp ONTAP data prot
 SnapVX / SRDF; PowerFlex guides; CSM / CSI PowerFlex; CSI external-snapshotter.
 Not in it: Commvault 11.38 (its site forbids fetching it; 11.36 and 11.40 cover it), Veeam pages for other hypervisors
 and clouds.
+
+The new general library 2026.11.01 (VAST, VMware KB and vSphere guides, PowerScale manuals: see UPGRADE.md in the
+repository) is not in this zip: it is 1.1 GB of parts. Take it with the repository ZIP from GitHub (library/ folder) when
+you want it; the same install command then installs it for everyone.
