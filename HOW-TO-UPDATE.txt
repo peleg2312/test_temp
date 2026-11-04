@@ -1,8 +1,8 @@
-Storage brain update 2b433c1 -> 0947709: the Flashback team (backup and restore), brain + library
+Storage brain update 2b433c1 -> ff1a194: the Flashback team (backup and restore), brain + library
 ==================================================================================================
 Two downloads:
-  storage-brain-update-0947709.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 0498d9d: checked
-                                       to end up exactly at 0947709; no new web UI bundle needed;
+  storage-brain-update-ff1a194.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and 0947709: checked
+                                       to end up exactly at ff1a194; no new web UI bundle needed;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
@@ -26,19 +26,23 @@ What you get
   - The docs service on port 8443 (--docs-port 8443) and plain HTTP for the docs MCP and the marketplace (--plain-http):
     a PC joins a team with the two plugin commands, no certificate
   - Team notes now show up first in docs searches when they match (they were ranked under the library before)
+  - Windows PCs: the hooks start with whatever Python 3 is there (python3, python or py), and without any Python the
+    read-only guard blocks MCP and shell calls instead of letting them through (docs-http keeps working); the knowledge
+    folders and files link without the Windows symlink right (junctions, hard links re-made after every pull)
+  - Two people adding notes at the same moment no longer block each other's push (union merge in the team repository)
   - Fixes for every team: laptops now get team plugin changes by themselves (the next session start installs the new
     version in the background, active from the session after; retried when GitLab does not answer); the team editor
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-0947709.zip (24 MB)         SHA-256 90bf6d1f1311b85f4fefda9e021f0d2d7e465f27c49c8752b148ee6256a97f03
+     storage-brain-update-ff1a194.zip (24 MB)         SHA-256 ecca7e9627566a2daafba8d078a27436ad492829ce5c22812258b0c57b2ede4c
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-0947709.zip
-     sh update-2b433c1-0947709/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-ff1a194.zip
+     sh update-2b433c1-ff1a194/apply-update.sh /path/to/storage-mcp-servers
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
       --docs-port 8443: the docs service moves to 8443, firewalld opens 8443 and closes 8001
@@ -78,7 +82,11 @@ Laptops / other PCs / other VMs (with --plain-http: no certificate, no script)
      && claude plugin update paas-brain-flashback@paas-brain-flashback   (after that updates come by themselves)
   Another VM's marketplace: paas-market connect http://<vm>:3443 <token>     (cat /etc/paas/market/token on this VM)
   join.sh / join.ps1 still work (they now also check plain-http VMs: the port and the docs service), but are not needed.
-  The brain's session hooks and docs-local need Python 3 on the PC (python3 on PATH); docs-http does not.
+  Windows PC: install Python 3 from python.org and tick "Add python.exe to PATH" (no admin needed for "Install for me
+  only"). Without it the PC can only search the docs (docs-http): the read-only guard blocks every other tool call,
+  and there is no team setup and no notes sync. docs-local stays failed on Windows (harmless; docs-http has the docs).
+  Not tested on a real Windows PC (none here); tested on Linux with the Windows conditions simulated. The first Windows
+  PC is the real test: after the first session check that ~/.claude/brain/notes exists and a saved note reaches GitLab.
 
 What was tested here, on clean machines with the real Claude CLI (docs service on plain HTTP 8443, a git-served team repo):
   - machine A: only the two plugin commands -> docs-http Connected (no certificate), docs-local Connected
