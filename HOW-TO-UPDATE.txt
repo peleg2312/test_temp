@@ -1,12 +1,35 @@
-Storage brain update 2b433c1 -> c21b1da: the Flashback team (backup and restore), brain + library
-==================================================================================================
+Storage brain update 2b433c1 -> 32f9fbb: presentations v4 (+ everything of c21b1da: the Flashback team, brain + library)
+=======================================================================================================================
 Two downloads:
-  storage-brain-update-c21b1da.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. 3a59774 and ff1a194: checked
-                                       to end up exactly at c21b1da; no new web UI bundle needed;
+  storage-brain-update-32f9fbb.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. c21b1da: checked to end up
+                                       exactly at 32f9fbb from 2b433c1, c21b1da and 22f2b92; no new web UI bundle needed;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
 
-What you get
+New in 32f9fbb: presentations v4 (plugin "presentations" 1.2.0, every team)
+  - Hebrew and English in the same line now read right: "2 TB" stays "2 TB" (it showed "TB 2"), "-12" stays "-12" (it
+    showed "12-"), "ב-+6%" no longer garbles, and a short English phrase ("Always On", "SQL Server 2019") never breaks
+    across two lines. Things that already read right (ה-proxy, failover., (56%), dates, versions, MA-SITEB-03) are
+    unchanged. See deck-samples/v4/hebrew-english-before-after.png.
+  - Five new slide types: summary (the answer first: conclusion, 2-4 points, the ask), status (a board of systems with
+    OK / Warning / Failed, also תקין / אזהרה / נכשל), diagram (boxes and arrows, e.g. clients -> MediaAgents -> S3, groups
+    as frames, right to left in Hebrew), matrix (2x2), beforeafter (one number that changed)
+  - Real layout check: every deck is drawn once more with LibreOffice exactly as it renders; any text that lands outside
+    its box is made smaller and checked again; a PDF copy is saved beside the .pptx. Needs LibreOffice and poppler-utils
+    on the VM (once, as root, from your RHEL repository):  dnf install libreoffice-impress poppler-utils
+    Without them decks are built as before and the reply says the check was skipped.
+  - Sparklines under numbers ("trend"), callouts on a chart point, a fade between slides, speaker notes written from each
+    slide's own text, premium themes on request ("executive" navy + gold, "ivory" warm paper, "noir" dark)
+  - Story plans for recurring decks: monthly-review, incident-review, dr-drill, proposal, status-update (the model follows
+    the plan slide by slide), and a story check: a title that only names a topic ("Failures"), two bullet slides in a
+    row, no closing slide or a leftover placeholder come back as a warning to fix
+  - The company template: when you have it, give its path ("template": "/path/company.potx", or tell Claude the path);
+    its master, colours, fonts and layouts are used.
+  Samples (built here): deck-samples/v4/ hebrew-monthly-review.pptx/.pdf, mixed-hebrew-english.pptx/.pdf,
+    english-capacity-review-executive.pptx/.pdf, english-capacity-review-noir.pptx/.pdf
+  Try in a new chat:  "תכין מצגת סקירה חודשית של הגיבויים להנהלה"   or   /presentations:deck DR drill results in Hebrew
+
+What you get (from c21b1da, still in this zip)
   - Team "flashback" (Brain tab -> Team -> Flashback), its own rules on top of the golden rules (B1-B9: backup software is
     infrastructure - read-only; a restore is prepared as a runbook for you to run; a restore point is proven by job ID,
     status, copy, retention and log chain; every CommCell / Veeam / OADP / storage layer checked or named as not checked)
@@ -45,14 +68,15 @@ What you get
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-c21b1da.zip (24 MB)         SHA-256 dd5c8e6f8aaa319fef4aeb2b0de476bb30cbe90a970d79379411963c0b12d759
+     storage-brain-update-32f9fbb.zip (24 MB)         SHA-256 f0de7026375eca77d7bcc3bef633692b7099a93cbca628abf48c0619bbc731dd
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-c21b1da.zip
-     sh update-2b433c1-c21b1da/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-32f9fbb.zip
+     sh update-2b433c1-32f9fbb/apply-update.sh /path/to/storage-mcp-servers
+     dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
       --docs-port 8443: the docs service moves to 8443, firewalld opens 8443 and closes 8001
