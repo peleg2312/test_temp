@@ -1,10 +1,23 @@
-Storage brain update 2b433c1 -> 32f9fbb: presentations v4 (+ everything of c21b1da: the Flashback team, brain + library)
-=======================================================================================================================
+Storage brain update 2b433c1 -> 993555f: chat memory meter in the web UI, presentations v4 (+ everything of c21b1da:
+the Flashback team, brain + library)
+=====================================================================================================================
 Two downloads:
-  storage-brain-update-32f9fbb.zip        the brain update (for a VM on 2b433c1 or any zip since, incl. c21b1da: checked to end up
-                                       exactly at 32f9fbb from 2b433c1, c21b1da and 22f2b92; no new web UI bundle needed;
+  storage-brain-update-993555f.zip        the brain update WITH the new web UI (for a VM on 2b433c1 or any zip since, incl. c21b1da
+                                       and 32f9fbb: checked to end up exactly at 993555f from 2b433c1, c21b1da and 32f9fbb;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
+
+New in 993555f: the chat's memory, readable (web UI)
+  - The button next to the prompt now reads "Memory 34%" with a small ring that fills up: green, amber from 50%, red
+    from 80% ("empty" in a new chat). Hover it: it says what that means and what to do.
+  - Click it: "How full is this chat?" - a bar, one sentence of advice, what fills it (what Claude read / what it wrote,
+    in pages of text, the token numbers small beside them) and what to do when it fills up (/compact, a new chat, ask for
+    summaries instead of whole logs).
+  - No more "0 tokens until I refresh": the GLM model reports its usage only at the end of a request, so the page got a
+    zero first and never the real number. Zero readings are now ignored, and at the end of every answer the page reads
+    the real number by itself (what the refresh did).
+  - Comes with the new web UI bundle (in this zip, 1.37.5-paas, a new build): the installer run in step 2 unpacks it,
+    then restart the UI (the systemctl line in step 2). Everyone: reload the browser page once after the restart.
 
 New in 32f9fbb: presentations v4 (plugin "presentations" 1.2.0, every team)
   - Hebrew and English in the same line now read right: "2 TB" stays "2 TB" (it showed "TB 2"), "-12" stays "-12" (it
@@ -68,14 +81,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-32f9fbb.zip (24 MB)         SHA-256 f0de7026375eca77d7bcc3bef633692b7099a93cbca628abf48c0619bbc731dd
+     storage-brain-update-993555f.zip (201 MB)        SHA-256 5392d89aebfbaffe821dd3c85aef188915d81f5ebb8a43476638fd40beab549a
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-32f9fbb.zip
-     sh update-2b433c1-32f9fbb/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-993555f.zip
+     sh update-2b433c1-993555f/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
