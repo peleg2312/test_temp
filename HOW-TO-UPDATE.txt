@@ -1,11 +1,26 @@
-Storage brain update 2b433c1 -> e2ec600: external brains in the Brain tab, chat memory meter, presentations v4
+Storage brain update 2b433c1 -> bf145dd: teams own their hooks from git, external brains, chat memory meter, presentations v4
 (+ everything of c21b1da: the Flashback team, brain + library)
 =====================================================================================================================
 Two downloads:
-  storage-brain-update-e2ec600.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. 32f9fbb and
-                                       993555f: checked to end up exactly at e2ec600 from 2b433c1, 32f9fbb and 993555f;
+  storage-brain-update-bf145dd.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. 993555f and
+                                       e2ec600: checked to end up exactly at bf145dd from 2b433c1, 993555f and e2ec600;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
+
+New in bf145dd: each team's git is the boss (the installer no longer changes teams)
+  - Hooks and the read-only guard of a team come from its git repository. With a team chosen (Brain tab), the VM's own
+    copies step aside and the team plugin's hooks run, exactly what its git holds: remove a hook or the guard there and it
+    is not run for that team; nothing on the VM puts it back. "No team" sessions keep the VM's default hooks and guard.
+    The VM still protects its own secrets (the API key in /etc/paas) and its hook files.
+  - install-multiuser.sh / install-shared.sh never change a team repository again (not on the VM, not in GitLab):
+      a team already on the VM is left as it is; a GitLab project with content is left as it is;
+      only a team that does not exist yet is built, and an EMPTY GitLab project gets its team's first content once.
+  - --team <name>=<git url> works for any team or brain: one already here only gets its url recorded; one of brain/teams
+    that is not here is built once; any other repository (a team built elsewhere, an external brain) is cloned as it is.
+  - Updating a team from this repository is now your decision, one command, when you want it:
+      python3 brain/teams/publish.py <team> --to <its GitLab url>     (it refuses to drop the team's own edits; --force does)
+  - Note: a change of the docs port or http/https no longer rewrites the teams' docs address; change it in the team's git
+    (Brain tab -> Team -> More -> Edit a team -> docs-search).
 
 New in e2ec600: other brains, kept as they are (Brain tab, Team)
   - Any other Claude Code brain in git can be added and switched like a team, without changing it: a repository with a
@@ -93,14 +108,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-e2ec600.zip (201 MB)        SHA-256 e3ad9cbd9166ed16cb6ed33d48df570260d8ca7e93d24dd135fdcee875c0cb05
+     storage-brain-update-bf145dd.zip (201 MB)        SHA-256 d6586468009d5bda3b53da9026157d5d00a942644912e527840f255887b24da8
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-e2ec600.zip
-     sh update-2b433c1-e2ec600/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-bf145dd.zip
+     sh update-2b433c1-bf145dd/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
