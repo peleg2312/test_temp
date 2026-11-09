@@ -1,11 +1,23 @@
-Storage brain update 2b433c1 -> 993555f: chat memory meter in the web UI, presentations v4 (+ everything of c21b1da:
-the Flashback team, brain + library)
+Storage brain update 2b433c1 -> e2ec600: external brains in the Brain tab, chat memory meter, presentations v4
+(+ everything of c21b1da: the Flashback team, brain + library)
 =====================================================================================================================
 Two downloads:
-  storage-brain-update-993555f.zip        the brain update WITH the new web UI (for a VM on 2b433c1 or any zip since, incl. c21b1da
-                                       and 32f9fbb: checked to end up exactly at 993555f from 2b433c1, c21b1da and 32f9fbb;
+  storage-brain-update-e2ec600.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. 32f9fbb and
+                                       993555f: checked to end up exactly at e2ec600 from 2b433c1, 32f9fbb and 993555f;
                                        the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
+
+New in e2ec600: other brains, kept as they are (Brain tab, Team)
+  - Any other Claude Code brain in git can be added and switched like a team, without changing it: a repository with a
+    plugin marketplace, a plugin folder, or plain skills/ and agents/ (for example team-redbull/redbull-brain).
+      Brain tab -> Team -> More -> "Add a team, or any other Claude Code brain, from a git url"   (or: paas-team add <name> <url>)
+      then click it like a team (or: paas-team use <name>), and start a new chat. Its skills are /<its plugin>:<skill>.
+  - Its settings (server addresses, tokens) in the Brain tab box "Settings of <brain>" (or: paas-team env <name> KEY=VALUE);
+    the web UI's chats see them (they go into ~/.claude/settings.json "env": ~/.bashrc is never read by the UI).
+  - It keeps its own workflow (for example merge requests for knowledge): the brain never commits or pushes into it, the
+    team editor leaves it alone, Sync only pulls it. The VM's read-only guard still applies to its tools.
+  - A missing marketplace file in that repository (redbull-brain has none) is written into your clone only, invisible to git.
+  - For redbull-brain specifically: root runs `dnf install -y jq` once (its hooks use it).
 
 New in 993555f: the chat's memory, readable (web UI)
   - The button next to the prompt now reads "Memory 34%" with a small ring that fills up: green, amber from 50%, red
@@ -81,14 +93,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-993555f.zip (201 MB)        SHA-256 5392d89aebfbaffe821dd3c85aef188915d81f5ebb8a43476638fd40beab549a
+     storage-brain-update-e2ec600.zip (201 MB)        SHA-256 e3ad9cbd9166ed16cb6ed33d48df570260d8ca7e93d24dd135fdcee875c0cb05
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-993555f.zip
-     sh update-2b433c1-993555f/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-e2ec600.zip
+     sh update-2b433c1-e2ec600/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
