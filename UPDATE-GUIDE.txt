@@ -1,22 +1,22 @@
-STORAGE BRAIN UPDATE dfe402b - how to update, the new folder structure, what to change
+STORAGE BRAIN UPDATE 03d3bfe - how to update, the new folder structure, what to change
 =====================================================================================
 This update holds the work of two sessions, merged and tested together (26 test files pass):
   A. the team-layout session (5 commits): each team's rules live in its git repository (rules/), the team's definition
      and MCP servers have one copy inside the plugin, tested change procedures (runbooks) are kept and searched
   B. this session: external brains of any shape, library + docs service + docs-local for them on the VM, nothing
-     of yours or of a team's repository overwritten
+     of yours or of a team's repository overwritten, and (new) external brains can learn into their own git (part 5)
 
-Download (test_temp):  storage-brain-update-dfe402b.zip   202 MB
-  SHA-256  4ad7e8d8f002b977e27b5f2a19f7896981566938bb413d1133568be722031794
-  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, d505caa and 5d5a69f it ends exactly at dfe402b).
+Download (test_temp):  storage-brain-update-03d3bfe.zip   202 MB
+  SHA-256  67dc5fd5d69560651bbadc525b5d15d06fe763b15ff78e625e717b851ecd094b
+  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, 5d5a69f and dfe402b it ends exactly at 03d3bfe).
   The general docs library is not in it (your VM keeps its own). The Flashback library zip is unchanged.
 
 
 1. UPDATE THE VM  (as root, about 10 minutes)
 ---------------------------------------------
-  sha256sum /root/storage-brain-update-dfe402b.zip           (must be the SHA-256 above)
-  cd /root && unzip -o storage-brain-update-dfe402b.zip
-  sh update-2b433c1-dfe402b/apply-update.sh /path/to/storage-mcp-servers
+  sha256sum /root/storage-brain-update-03d3bfe.zip           (must be the SHA-256 above)
+  cd /root && unzip -o storage-brain-update-03d3bfe.zip
+  sh update-2b433c1-03d3bfe/apply-update.sh /path/to/storage-mcp-servers
   cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
   systemctl restart 'paas-ui@*'
   Everyone: reload the browser page once, start a new chat.
@@ -137,3 +137,26 @@ Download (test_temp):  storage-brain-update-dfe402b.zip   202 MB
   curl -s http://<vm>:8443/health                                    -> {"ok": true}   (https:// and -k without --plain-http)
   PAAS_TEAMS=/opt/paas/teams /opt/paas/bin/paas-team docs --all     -> one line per external brain (none: no output)
   As a member, new chat:  "what runbooks do we have?"  and  "run brain-health"
+
+
+5. NEW: AN EXTERNAL BRAIN THAT LEARNS INTO ITS OWN GIT  (optional, off until you turn it on)
+----------------------------------------------------------------------------------------
+  Today: what Claude learns while redbull is active stays in each person's own notes.
+  Turn it on (root on the VM: for everyone; nothing in their repository changes):
+      /opt/paas/bin/paas-team learn redbull merge-request     every saved page = a merge request for their team to review
+      /opt/paas/bin/paas-team learn redbull push              pushed to their branch at once (only if it is not protected)
+      /opt/paas/bin/paas-team learn redbull off               back to private notes
+      /opt/paas/bin/paas-team learn redbull                   shows the state, folders and guide
+  Then everyone: new chat.
+
+  What and where comes from THEIR git:
+    - their folders: knowledge/notes or notes/, runbooks/, incidents/ or postmortems/, their inbox for drafts
+      (other names: root's /opt/paas/teams/redbull.brain.json, e.g. {"learn": {"save": "merge-request", "notes": "kb"}})
+    - their own rules for learning: LEARNING.md in their repository; Claude reads it and follows it over our formats
+    - their own hooks keep running as before; ours only add the saving
+  What happens in a chat:
+    - the chat starts with: where to save, their guide, their runbooks and note topics
+    - Claude saves a note / runbook / incident there -> checked for passwords and tokens (refused if any) -> committed
+      as you -> merge request from your branch learn/<you> (you keep seeing your pages until it is merged)
+    - after a long session that saved nothing, Claude is asked once whether something should be kept
+  Their GitLab must let your token push a branch (Developer). Not GitLab: the branch is pushed, you open the request.
