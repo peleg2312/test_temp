@@ -1,0 +1,139 @@
+STORAGE BRAIN UPDATE dfe402b - how to update, the new folder structure, what to change
+=====================================================================================
+This update holds the work of two sessions, merged and tested together (26 test files pass):
+  A. the team-layout session (5 commits): each team's rules live in its git repository (rules/), the team's definition
+     and MCP servers have one copy inside the plugin, tested change procedures (runbooks) are kept and searched
+  B. this session: external brains of any shape, library + docs service + docs-local for them on the VM, nothing
+     of yours or of a team's repository overwritten
+
+Download (test_temp):  storage-brain-update-dfe402b.zip   202 MB
+  SHA-256  4ad7e8d8f002b977e27b5f2a19f7896981566938bb413d1133568be722031794
+  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, d505caa and 5d5a69f it ends exactly at dfe402b).
+  The general docs library is not in it (your VM keeps its own). The Flashback library zip is unchanged.
+
+
+1. UPDATE THE VM  (as root, about 10 minutes)
+---------------------------------------------
+  sha256sum /root/storage-brain-update-dfe402b.zip           (must be the SHA-256 above)
+  cd /root && unzip -o storage-brain-update-dfe402b.zip
+  sh update-2b433c1-dfe402b/apply-update.sh /path/to/storage-mcp-servers
+  cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
+  systemctl restart 'paas-ui@*'
+  Everyone: reload the browser page once, start a new chat.
+
+  (Flags you gave before, e.g. --docs-port 8443 --plain-http, are remembered; you do not need them again.)
+
+  What the installer does NOT touch: your team repositories (on the VM and in GitLab), the docs port, http/https,
+  the docs token, firewall, the API key, what people edited in their own ~/.claude.
+  What it adds: the paas-brain-docs service + daily timer (03:17), the current docs server files in /opt/paas/library.
+
+
+2. THE NEW FOLDER STRUCTURE
+---------------------------
+2a. A team repository (GitLab storage/brain-<team>, and the VM copy /opt/paas/teams/<team>)
+
+  BEFORE (old layout)                           NOW (new layout)
+  brain-san/                                    brain-san/
+  |- .claude-plugin/marketplace.json            |- .claude-plugin/marketplace.json
+  |- team.json          <- moved                |- paas-brain-san/            the plugin (what Claude Code installs)
+  |- mcp.json           <- moved                |   |- team.json              ONLY copy: lists, version, remote, library,
+  |- paas-brain-san/                            |   |                         mcp_pending (servers still missing url/token)
+  |   |- team.json (2nd copy)                   |   |- .mcp.json              ONLY copy of the servers' url + token
+  |   |- .mcp.json (2nd copy)                   |   |- skills/ agents/ hooks/ bin/ lib/ brain/(templates)
+  |   |- skills/ agents/ hooks/ ...             |- rules/                     NEW: the team's own rules
+  |- knowledge/                                 |   |- main.md                the golden rules (every member imports it)
+  |   |- notes.md environment.md tool-map.md    |   |- persona.md storage.md coding.md
+  |   |- notes/ captures/ incidents/            |- knowledge/
+  |- README.md bin/ check.py join.sh ...        |   |- notes.md environment.md tool-map.md
+                                                |   |- notes/ captures/ incidents/
+                                                |   |- runbooks/              NEW: <topic>-<task>.md, tested change
+                                                |                             procedures (Pre-checks, Procedure,
+                                                |                             Verification, Rollback, Scope, History)
+                                                |- README.md bin/ check.py join.sh join.ps1 .gitlab-ci.yml
+
+  rules/ is created ONCE from the brain's templates, then it is the team's: a later publish never changes a file there
+  (it only says "the brain's template is newer"). People change the rules in git or in the Brain tab's team editor.
+  Claude cannot change them (the read-only guard blocks it). check.py caps them: main 120, persona 30, storage 150,
+  coding 60 lines, and scans them for secrets.
+
+2b. Each person's ~/.claude on a team
+
+  ~/.claude/CLAUDE.md                one import line of ~/.claude/brain/main.md + the person's own lines below it
+                                     (if it held the brain's full text it is kept as CLAUDE.md.bak.<time>)
+  ~/.claude/brain/main.md            -> link to  teams/<team>/rules/main.md
+  ~/.claude/brain/persona.md         -> link to  teams/<team>/rules/persona.md
+  ~/.claude/brain/storage.md         -> link to  teams/<team>/rules/storage.md
+  ~/.claude/brain/coding.md          -> link to  teams/<team>/rules/coding.md
+  ~/.claude/brain/notes.md, environment.md, tool-map.md, notes/, captures/, incidents/, runbooks/
+                                     -> links into teams/<team>/knowledge/   (runbooks/ is new)
+  ~/.claude/brain/teams/<team>/      the person's clone of the team repository (pulled at every session start)
+  (Windows without the symlink right: hard links / junctions, re-made after each pull.)
+
+2c. The VM (new since the last zips)
+
+  /opt/paas/teams/<team>/                   each team repository (layout 2a) or an external brain, as it is in git
+  /opt/paas/teams/<name>.brain.json         optional: root describes an external brain without touching its repository
+  /opt/paas/libraries/<lib>/                team libraries; .brain inside says which external brain owns it
+  /var/lib/paas-docs/index/<team>.db        knowledge index per team / external brain (docs service, every 10 min)
+  /etc/systemd/system/paas-brain-docs.{service,timer}   nightly: pull external brains, rebuild their libraries if changed
+
+2d. External brains (redbull-brain and others): their repository stays exactly as it is. Nothing to change.
+
+
+3. WHAT TO CHANGE
+-----------------
+3a. Nothing is required. After the update every team keeps working in its old layout: the brain reads an older
+    repository's root team.json / mcp.json, and takes the rules from the plugin's copy when rules/ does not exist.
+    Members get the new runbooks and the fixes at their next session start.
+
+3b. Recommended, once per team (san, nas, flashback, ...): move it to the new layout, so its rules live in its git.
+    The installer will never do this for you (a team's repository is its own). Do it when you choose, one team at a time.
+
+    Before: make sure nobody is in the middle of a Brain tab team edit. Then, as root on the VM:
+      cd /path/to/storage-mcp-servers
+      python3 brain/teams/publish.py san --to <the GitLab url of brain-san>
+          (a team without GitLab:  python3 brain/teams/publish.py san --to /opt/paas/teams/san)
+      git -C /opt/paas/teams/san pull --ff-only          (the VM copy follows GitLab; skip for a team without GitLab)
+
+    What it does, in one commit pushed to the team's repository:
+      - creates rules/main.md, persona.md, storage.md, coding.md from the brain's current templates
+      - moves the root team.json and mcp.json into paas-brain-san/ (servers with url + token, remote, library kept)
+        and deletes the root copies
+      - rebuilds the plugin with this version's skills, agents and hooks
+      - adds knowledge/runbooks/; knowledge/ itself (notes, incidents, environment.md ...) is NOT changed
+    Tested here on a team published by the previous version that had a note and a filled-in PowerMax server since:
+    after the publish the note, the server's url + token and the GitLab remote were all still there, rules/ existed.
+
+    If it stops with "the team repository holds N change(s) to the plugin made outside publish.py (Brain tab edits)":
+    someone changed skills / agents / hooks from the Brain tab. Either copy those changes into brain/teams/<team>
+    first (git -C <repo> show <sha> shows each), or re-run with --force, which DROPS them.
+    (A Brain tab edit that only changed MCP servers does not count; it is kept.)
+
+    After it, every member's next session start pulls it and links main / persona / storage / coding into rules/.
+    Check as one member:   ls -l ~/.claude/brain/main.md      -> ... teams/san/rules/main.md
+    Undo (if you must):    git revert the publish commit in the team's repository, push; members follow at next start.
+
+3c. Did you edit a team's rules before (persona, storage rules) in brain/teams/<team>/ or by the Brain tab?
+    rules/ is created from the brain's CURRENT templates; the Brain tab team editor now writes persona / storage rules
+    into rules/. After 3b, open rules/persona.md and rules/storage.md in GitLab and check they say what your team wants.
+
+3d. Optional in GitLab: protect rules/ (CODEOWNERS or a protected-file rule) so a rule change needs a review.
+
+3e. Your own ~/.claude/CLAUDE.md lines: keep them below the import line; they are never replaced.
+
+3f. External brains: nothing to change. Optional, only when its folders are not detected:
+      /opt/paas/teams/<name>.brain.json   e.g.  {"docs": "manuals", "knowledge": {"folders": ["wiki"]}, "rules": "GUIDE.md"}
+      then  /opt/paas/bin/paas-team docs <name> --force   (library now; members switch again for the rest)
+
+3g. Laptops / other PCs: nothing. The next session start installs the new team plugin in the background (active from
+    the session after). A PC that never updated by itself: claude plugin marketplace update paas-brain-<team> &&
+    claude plugin update paas-brain-<team>@paas-brain-<team>
+
+
+4. CHECKS AFTER THE UPDATE  (as root)
+-------------------------------------
+  systemctl is-active paas-docs paas-gate                          -> active active
+  systemctl list-timers paas-brain-docs.timer                       -> next run tonight
+  curl -s http://<vm>:8443/health                                    -> {"ok": true}   (https:// and -k without --plain-http)
+  PAAS_TEAMS=/opt/paas/teams /opt/paas/bin/paas-team docs --all     -> one line per external brain (none: no output)
+  As a member, new chat:  "what runbooks do we have?"  and  "run brain-health"
