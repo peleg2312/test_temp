@@ -1,11 +1,34 @@
-Storage brain update 2b433c1 -> d505caa: external brains work in every Brain tab feature, teams own their hooks from git,
-chat memory meter, presentations v4 (+ everything of c21b1da: the Flashback team, brain + library)
+Storage brain update 2b433c1 -> d122def: external brains get library, docs service, docs-local and index by themselves
+on the VM (like SAN), every Brain tab feature for them, teams own their hooks from git, chat memory meter, presentations v4
+(+ everything of c21b1da: the Flashback team, brain + library)
 =====================================================================================================================
 Two downloads:
-  storage-brain-update-d505caa.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. e2ec600 and
-                                       bf145dd: checked to end up exactly at d505caa from 2b433c1, e2ec600 and bf145dd;
-                                       the general docs library is not in it: your VM keeps the one it has)
+  storage-brain-update-d122def.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. e2ec600,
+                                       bf145dd and d505caa: checked to end up exactly at d122def from 2b433c1, bf145dd and
+                                       d505caa; the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
+
+New in d122def: an external brain (for example redbull-brain) gets everything the SAN team has on the VM, by itself
+  Root adds it once, from git (any name):
+      cd /path/to/storage-mcp-servers
+      sh brain/multiuser/install-multiuser.sh --team redbull=https://<gitlab>/team-redbull/redbull-brain.git
+  From then on, with nothing else to run:
+  - Library: its docs folder (brain.json "docs", else docs/upstream; one product per sub-folder) becomes its own team
+    library /opt/paas/libraries/redbull. Rebuilt at every install / update and every night (03:17, timer
+    paas-brain-docs) only when its docs changed in git; a document deleted in git leaves the library too.
+  - Docs service (docs-http, port 8443): indexes its knowledge pages (knowledge/, runbooks/, incidents/, notes/ ... or
+    brain.json "knowledge"), refreshed from its git every 10 minutes:  http://<vm>:8443/mcp?team=redbull
+  - docs-local: whoever switches to it (Brain tab -> Team -> redbull) gets a docs-local that searches its library together
+    with its knowledge pages; switching away removes it. Start a new chat after switching.
+  - The VM copy /opt/paas/teams/redbull is pulled every night (fast-forward only; never changed by the VM).
+  Check (as root):
+      PAAS_TEAMS=/opt/paas/teams /opt/paas/bin/paas-team docs --all     -> "redbull: up to date ...", "library redbull: ..."
+      /opt/paas/bin/paas-library list                                    -> redbull  <n> documents ...
+      ls -l /var/lib/paas-docs/index/redbull.db                          (within 10 minutes of the install)
+      systemctl list-timers paas-brain-docs.timer
+  As a member, after switching to it:  claude mcp list   -> docs-local: python3 /opt/paas/library/mcp_stdio.py ... Connected
+  Rebuild one now:  /opt/paas/bin/paas-team docs redbull --force
+  Not for laptops by itself: its repository has no docs token; a laptop adds the VM's docs-http by hand if needed.
 
 New in d505caa: an external brain (for example redbull-brain) in every Brain tab feature
   - Team: add it with the git url alone (the name comes from the repository); Settings are now fields for every variable
@@ -14,8 +37,7 @@ New in d505caa: an external brain (for example redbull-brain) in every Brain tab
     Open a page, "Propose a change", or "New page" (from its templates): it goes to its GitLab as a merge request for its
     team to review (nothing touches its main branch; no glab needed). Your own notes stay one click away.
   - Hooks list: shows the hooks that really run (the team's own from its git; the VM's standing aside). For every team.
-  - Docs: root loads its docs folder into a team library once, then the Docs tab and its search use it:
-      /opt/paas/bin/paas-team docs redbull        (run as root after a member added it, or after cloning it to /opt/paas/teams)
+  - Docs: its docs folder becomes a team library (automatic on the VM since d122def), used by the Docs tab and its search
   - Market: listed as plugin/brain-<name>; on = switch to it, off = no team.
   - Optional brain.json in its repository makes it exact (title, knowledge folders, settings with explanations, docs):
     a ready one for redbull-brain is in examples/redbull-brain.json (give it to them to commit at their repository's top).
@@ -121,14 +143,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-d505caa.zip (201 MB)        SHA-256 080d14346e1547124c4f249f103dae5355c3d160eb3ad206e51e2649b7f38d0e
+     storage-brain-update-d122def.zip (202 MB)        SHA-256 665d66839176d285f843842fbb5b6dc69f240ae4b6a8309da96d2bc13cd30f88
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-d505caa.zip
-     sh update-2b433c1-d505caa/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-d122def.zip
+     sh update-2b433c1-d122def/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
