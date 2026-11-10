@@ -1,12 +1,32 @@
-Storage brain update 2b433c1 -> d122def: external brains get library, docs service, docs-local and index by themselves
-on the VM (like SAN), every Brain tab feature for them, teams own their hooks from git, chat memory meter, presentations v4
+Storage brain update 2b433c1 -> 5d5a69f: external brains of any shape, nothing overwritten; library, docs service,
+docs-local and index by themselves on the VM (like SAN), every Brain tab feature for them, teams own their hooks from git, chat memory meter, presentations v4
 (+ everything of c21b1da: the Flashback team, brain + library)
 =====================================================================================================================
 Two downloads:
-  storage-brain-update-d122def.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. e2ec600,
-                                       bf145dd and d505caa: checked to end up exactly at d122def from 2b433c1, bf145dd and
-                                       d505caa; the general docs library is not in it: your VM keeps the one it has)
+  storage-brain-update-5d5a69f.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since, incl. e2ec600,
+                                       bf145dd, d505caa and d122def: checked to end up exactly at 5d5a69f from 2b433c1, d505caa
+                                       and d122def; the general docs library is not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
+
+New in 5d5a69f: brains of any shape, and nothing overwritten
+  Shapes that now work as they are (nothing in their repository changes):
+  - a marketplace with several plugins: all of them are switched on and off together
+  - a plugin folder (like redbull-brain): as before
+  - a "project-style" brain: CLAUDE.md + .claude/skills, .claude/agents, .claude/commands (+ its .claude/settings.json
+    hooks and .mcp.json servers): becomes a plugin from its .claude folder; its CLAUDE.md is read in every chat as its rules
+  - only skills/ / agents/ / commands/ at the top, or only a CLAUDE.md
+  - knowledge under any folder name (wiki/, kb/ ...): found by content; docs for the library: docs/upstream
+  Anything else, root says it WITHOUT touching their repository, in a file beside the VM copy:
+      /opt/paas/teams/<name>.brain.json     e.g.  {"docs": "manuals", "knowledge": {"folders": ["wiki"]}, "rules": "GUIDE.md"}
+  (then:  /opt/paas/bin/paas-team docs <name> --force     for the library now; members: switch again for the rest)
+  Never overwritten:
+  - their repository (missing plugin files are written into the clone only, untracked and git-excluded); the VM copy is
+    only fast-forwarded to its git, and NOT pulled when root changed something in it by hand
+  - your own: a settings.json env value with the same name as the brain's comes back when you leave the brain; so does a
+    docs-local you had, and (outside the VM) your persona.md; your other plugins are not touched
+  - libraries: a brain's docs only go into its own library; a brain.json naming an existing library (e.g. flashback) is refused
+  - the VM: this update adds the paas-brain-docs service + daily timer and the current docs server files in
+    /opt/paas/library; docs port, http/https, the docs token, firewall, team repositories and accounts' edits stay as they are
 
 New in d122def: an external brain (for example redbull-brain) gets everything the SAN team has on the VM, by itself
   Root adds it once, from git (any name):
@@ -143,14 +163,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-d122def.zip (202 MB)        SHA-256 665d66839176d285f843842fbb5b6dc69f240ae4b6a8309da96d2bc13cd30f88
+     storage-brain-update-5d5a69f.zip (202 MB)        SHA-256 2f19853e0812a764f2508713ee7e3778328b8e2a21938cf676cf9cc495184c13
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-d122def.zip
-     sh update-2b433c1-d122def/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-5d5a69f.zip
+     sh update-2b433c1-5d5a69f/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
