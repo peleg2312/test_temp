@@ -1,22 +1,26 @@
-STORAGE BRAIN UPDATE 03d3bfe - how to update, the new folder structure, what to change
+STORAGE BRAIN UPDATE 889d397 - how to update, the new folder structure, what to change
 =====================================================================================
 This update holds the work of two sessions, merged and tested together (26 test files pass):
-  A. the team-layout session (5 commits): each team's rules live in its git repository (rules/), the team's definition
-     and MCP servers have one copy inside the plugin, tested change procedures (runbooks) are kept and searched
+  A. the team-layout session (6 commits): each team's rules live in its git repository (rules/), the team's definition
+     and MCP servers have one copy inside the plugin, tested change procedures (runbooks) are kept and searched;
+     and (new) the docs search returns one fact per hit instead of a whole notes file, captures are searchable
+     (marked "Unverified capture"), each chat starts with what teammates changed in the last 14 days, and the team
+     editor can also change the golden rules (main.md) and coding rules (coding.md). Nothing in the knowledge is
+     reformatted; only what the search reads is shaped.
   B. this session: external brains of any shape, library + docs service + docs-local for them on the VM, nothing
      of yours or of a team's repository overwritten, and (new) external brains can learn into their own git (part 5)
 
-Download (test_temp):  storage-brain-update-03d3bfe.zip   202 MB
-  SHA-256  67dc5fd5d69560651bbadc525b5d15d06fe763b15ff78e625e717b851ecd094b
-  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, 5d5a69f and dfe402b it ends exactly at 03d3bfe).
+Download (test_temp):  storage-brain-update-889d397.zip   202 MB
+  SHA-256  17742767de94b53e126780bced8865e3c8e19802eb23a6ef03a8c0929d337660
+  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, dfe402b and 03d3bfe it ends exactly at 889d397).
   The general docs library is not in it (your VM keeps its own). The Flashback library zip is unchanged.
 
 
 1. UPDATE THE VM  (as root, about 10 minutes)
 ---------------------------------------------
-  sha256sum /root/storage-brain-update-03d3bfe.zip           (must be the SHA-256 above)
-  cd /root && unzip -o storage-brain-update-03d3bfe.zip
-  sh update-2b433c1-03d3bfe/apply-update.sh /path/to/storage-mcp-servers
+  sha256sum /root/storage-brain-update-889d397.zip           (must be the SHA-256 above)
+  cd /root && unzip -o storage-brain-update-889d397.zip
+  sh update-2b433c1-889d397/apply-update.sh /path/to/storage-mcp-servers
   cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
   systemctl restart 'paas-ui@*'
   Everyone: reload the browser page once, start a new chat.
