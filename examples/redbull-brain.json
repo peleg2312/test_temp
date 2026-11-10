@@ -1,0 +1,24 @@
+{
+  "title": "Platform team brain",
+  "description": "OpenShift fleet: hub, MCE, HyperShift hosted clusters, bare metal (Metal3), GPU, AKO",
+  "plugin": "plugins/team-brain",
+  "knowledge": {
+    "folders": ["knowledge", "runbooks", "incidents"],
+    "inbox": "inbox",
+    "templates": "templates",
+    "index": "INDEX.md",
+    "save": "merge-request",
+    "branch": "main"
+  },
+  "settings": {
+    "TEAM_BRAIN_DIR":                { "about": "where this repository is cloned", "default": "{dir}" },
+    "GRAFANA_URL":                   { "about": "Grafana address (the Grafana MCP)", "optional": true },
+    "GRAFANA_SERVICE_ACCOUNT_TOKEN": { "about": "read-only Grafana service account token", "secret": true, "optional": true },
+    "GIT_MIRROR_BASE":               { "about": "GitLab group holding the git mirrors (hypershift, cluster-api, ironic...)" },
+    "RHOKP_URL":                     { "about": "Red Hat offline knowledge portal", "optional": true },
+    "RHOKP_SOLR_URL":                { "about": "RHOKP search (Solr) address", "optional": true },
+    "ARGOCD_DOCS_URL":               { "about": "Argo CD docs mirror", "optional": true }
+  },
+  "docs": "docs/upstream",
+  "library": "redbull"
+}
