@@ -1,4 +1,4 @@
-STORAGE BRAIN UPDATE 889d397 - how to update, the new folder structure, what to change
+STORAGE BRAIN UPDATE 6b6bee8 - how to update, the new folder structure, what to change
 =====================================================================================
 This update holds the work of two sessions, merged and tested together (26 test files pass):
   A. the team-layout session (6 commits): each team's rules live in its git repository (rules/), the team's definition
@@ -10,17 +10,17 @@ This update holds the work of two sessions, merged and tested together (26 test 
   B. this session: external brains of any shape, library + docs service + docs-local for them on the VM, nothing
      of yours or of a team's repository overwritten, and (new) external brains can learn into their own git (part 5)
 
-Download (test_temp):  storage-brain-update-889d397.zip   202 MB
-  SHA-256  17742767de94b53e126780bced8865e3c8e19802eb23a6ef03a8c0929d337660
-  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, dfe402b and 03d3bfe it ends exactly at 889d397).
+Download (test_temp):  storage-brain-update-6b6bee8.zip   202 MB
+  SHA-256  e6da59dfd9c4cae88ab69d38ad95884f2273584904e053cda0c107484566b6b7
+  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, 03d3bfe and 889d397 it ends exactly at 6b6bee8).
   The general docs library is not in it (your VM keeps its own). The Flashback library zip is unchanged.
 
 
 1. UPDATE THE VM  (as root, about 10 minutes)
 ---------------------------------------------
-  sha256sum /root/storage-brain-update-889d397.zip           (must be the SHA-256 above)
-  cd /root && unzip -o storage-brain-update-889d397.zip
-  sh update-2b433c1-889d397/apply-update.sh /path/to/storage-mcp-servers
+  sha256sum /root/storage-brain-update-6b6bee8.zip           (must be the SHA-256 above)
+  cd /root && unzip -o storage-brain-update-6b6bee8.zip
+  sh update-2b433c1-6b6bee8/apply-update.sh /path/to/storage-mcp-servers
   cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
   systemctl restart 'paas-ui@*'
   Everyone: reload the browser page once, start a new chat.
@@ -164,3 +164,16 @@ Download (test_temp):  storage-brain-update-889d397.zip   202 MB
       as you -> merge request from your branch learn/<you> (you keep seeing your pages until it is merged)
     - after a long session that saved nothing, Claude is asked once whether something should be kept
   Their GitLab must let your token push a branch (Developer). Not GitLab: the branch is pushed, you open the request.
+
+
+6. NEW IN 6b6bee8: BRAIN TAB
+---------------------------
+  - Memory shows the team's rules: rules/main.md (golden rules), rules/persona.md, rules/storage.md, rules/coding.md and
+    any other file in rules/. Edit + Save: committed and pushed to the team's GitLab, everyone gets it at their next chat;
+    History shows every version. CLAUDE.md there is only your own lines (keep its first line, which loads the rules).
+  - A team not moved to the new layout yet: its rules are shown read-only, with how to move it (publish.py).
+  - External brains: their rule files can be in any folder: a rules/ folder is found by itself, any other is named in
+    root's /opt/paas/teams/<name>.brain.json, e.g. {"rules": "instructions"} or {"rules": ["GUIDE.md", "policies"]}.
+    They are read in every chat and listed in that brain's Memory view (a change goes to them as a merge request).
+  - MCP & hooks: with a team on, the VM's own hooks are no longer listed (they do not run then); only the team's own.
+  - publish.py pushes to the team repository's own default branch (master or main), not always main.
