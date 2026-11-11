@@ -6,7 +6,7 @@ docs-local and index by themselves on the VM (like SAN), every Brain tab feature
 (+ everything of c21b1da: the Flashback team, brain + library)
 =====================================================================================================================
 Two downloads:
-  storage-brain-update-6194cee.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since: checked to end
+  storage-brain-update-633c5f4.zip        the brain update WITH the web UI (for a VM on 2b433c1 or any zip since: checked to end
                                        up exactly at dfe402b from 2b433c1, d505caa and 5d5a69f; the general docs library is
                                        not in it: your VM keeps the one it has)
   flashback-library-2026.11.04.zip           the team's own docs library (tarball + .sha256 inside)
@@ -166,14 +166,14 @@ What you get (from c21b1da, still in this zip)
     keeps a server's own token form (Commvault's bare secret, "Bearer" for the others)
 
 1. Check both downloads:
-     storage-brain-update-6194cee.zip (202 MB)        SHA-256 82e476bcccaa6c3617ff81437dc0ec7280a7749b0ae564e9222bbd227251123c
+     storage-brain-update-633c5f4.zip (202 MB)        SHA-256 308aab947b51e22b93b9e44e287faa8cfdfa3ea751814fbe3cd3f615bdfdb1d9
      flashback-library-2026.11.04.zip (144 MB)        SHA-256 1bf1b7c633106e2076147b473cd326c9d79cbb4ae95a166046047e17f1ebfdd2
        (inside: flashback-library-2026.11.04.tar.gz  70e047164684031a6f14eacce37acb15146ee3b8cc9f0db83db084228c347ef2;
         paas-library import checks it against the .sha256 next to it)
      Windows: Get-FileHash <file>        Linux: sha256sum <file>
 2. Copy both to the VM (/root), then as root:
-     cd /root && unzip -o storage-brain-update-6194cee.zip
-     sh update-2b433c1-6194cee/apply-update.sh /path/to/storage-mcp-servers
+     cd /root && unzip -o storage-brain-update-633c5f4.zip
+     sh update-2b433c1-633c5f4/apply-update.sh /path/to/storage-mcp-servers
      dnf install libreoffice-impress poppler-utils        (once: the presentations' real layout check and PDF copy)
      cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh --docs-port 8443 --plain-http
      (both flags once, remembered after that:
