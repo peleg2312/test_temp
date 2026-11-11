@@ -1,4 +1,4 @@
-STORAGE BRAIN UPDATE a7acbc0 - how to update, the new folder structure, what to change
+STORAGE BRAIN UPDATE 6194cee - how to update, the new folder structure, what to change
 =====================================================================================
 This update holds the work of two sessions, merged and tested together (26 test files pass):
   A. the team-layout session (6 commits): each team's rules live in its git repository (rules/), the team's definition
@@ -10,17 +10,17 @@ This update holds the work of two sessions, merged and tested together (26 test 
   B. this session: external brains of any shape, library + docs service + docs-local for them on the VM, nothing
      of yours or of a team's repository overwritten, and (new) external brains can learn into their own git (part 5)
 
-Download (test_temp):  storage-brain-update-a7acbc0.zip   202 MB
-  SHA-256  f226e86026bc181943f88e6cd7d0cb1ff47637a6ad03a68bf7d295bbe0fb374d
-  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, 889d397 and 6b6bee8 it ends exactly at a7acbc0).
+Download (test_temp):  storage-brain-update-6194cee.zip   202 MB
+  SHA-256  82e476bcccaa6c3617ff81437dc0ec7280a7749b0ae564e9222bbd227251123c
+  For a VM on 2b433c1 or any zip since (checked: from 2b433c1, 6b6bee8 and a7acbc0 it ends exactly at 6194cee).
   The general docs library is not in it (your VM keeps its own). The Flashback library zip is unchanged.
 
 
 1. UPDATE THE VM  (as root, about 10 minutes)
 ---------------------------------------------
-  sha256sum /root/storage-brain-update-a7acbc0.zip           (must be the SHA-256 above)
-  cd /root && unzip -o storage-brain-update-a7acbc0.zip
-  sh update-2b433c1-a7acbc0/apply-update.sh /path/to/storage-mcp-servers
+  sha256sum /root/storage-brain-update-6194cee.zip           (must be the SHA-256 above)
+  cd /root && unzip -o storage-brain-update-6194cee.zip
+  sh update-2b433c1-6194cee/apply-update.sh /path/to/storage-mcp-servers
   cd /path/to/storage-mcp-servers && sh brain/multiuser/install-multiuser.sh
   systemctl restart 'paas-ui@*'
   Everyone: reload the browser page once, start a new chat.
@@ -196,6 +196,9 @@ Download (test_temp):  storage-brain-update-a7acbc0.zip   202 MB
     - its rules: rules/main.md (golden rules), persona.md, storage.md in every chat; coding.md: the VM default (SDS has none)
     - Memory tab: notes.md, environment.md, tool-map.md, rules/... editable; a save is committed and pushed to SDS's git
     - its library "sds" for docs-local and for http://<vm>:8443/mcp?team=sds (laptops)
+    - its knowledge index, built by the docs service exactly as SAN's (one hit per fact, runbooks, captures marked) in
+      /var/lib/paas-docs/index/sds.db every 10 minutes; every member's docs-local opens that one shared index
+      instead of building its own (check: ls -l /var/lib/paas-docs/index/sds.db*)
   Your own notes from before are kept aside (notes.md.pre-team ...) and come back when you leave SDS.
   SDS's own vm-setup.py is not needed. Running it is fine too: it only adds the docs-http address for laptops to its
   plugin's .mcp.json (commit and push that in SDS's git).
