@@ -1,6 +1,6 @@
 PAAS-KIT  -  separate from the storage brain update
 ====================================================
-File: paas-kit-4dad4a1.zip   (352M)   SHA-256: 07bdb6382c551cc962a2c0ec2220e2ace00c4de1e3dcbee6cfd11b11e20d7da9
+File: paas-kit-871ac51.zip   (352M)   SHA-256: 293dffed33070274c9bb73a094b701526d1c31d58b545930b6dfbe3119d6d84d
 
 A separate zip, not part of the brain. Install it once as root: every user on the VM, and every user created later,
 has all of it on, whatever brain (team) they use - no question asked, and users cannot turn it off. Only root can
@@ -16,19 +16,20 @@ has all of it on, whatever brain (team) they use - no question asked, and users 
   MEASURED TOGETHER   one session of 8 shell commands + 4 MCP results: 96,263 tokens plain -> 88,984 with rtk (8%)
                       -> 43,878 with rtk + Headroom safe (54% fewer), nothing left out except what rtk prints a
                       "rtk recall <hash>" for.
-  code-graph plugin   for large code bases: a graph of the git repository the model asks instead of reading files
+  code-graph plugin   (measured: 2.4x faster on call-chain / impact questions; for simple lookups it tells the
+                      model to use grep) for large code bases: a graph of the git repository the model asks instead of reading files
                       (what a change breaks, who calls what, review). /code-graph:build once per repository.
   fastapi-api plugin  Python REST APIs offline: /fastapi-api:new <name>, paas-kit venv, rules, api-reviewer agent.
   ast-grep            structural code search on the PATH.
   ponytail (optional) coding mode: smallest correct change, never cutting validation, security or tests. Off by default;
-                      each user switches it on: /plugin -> paas-kit-extras -> ponytail, or the paas Market. Root, for
-                      everyone: paas-kit plugin on ponytail. Offline copy, needs node.
+                      a plugin of the paas Market (the installer adds it there if the brain does not carry it yet);
+                      each user adds it in the Market. Root, for everyone: paas-kit plugin on ponytail. Needs node.
   Not included: Go (dropped on request).
 
 INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12; ~1.5 GB free in /opt)
-  cd /root && cp /path/to/test_temp/paas-kit-4dad4a1.zip .        # the folder you git-pulled
-  sha256sum paas-kit-4dad4a1.zip                               # must print 07bdb6382c551cc962a2c0ec2220e2ace00c4de1e3dcbee6cfd11b11e20d7da9
-  unzip -q -o paas-kit-4dad4a1.zip
+  cd /root && cp /path/to/test_temp/paas-kit-871ac51.zip .        # the folder you git-pulled
+  sha256sum paas-kit-871ac51.zip                               # must print 293dffed33070274c9bb73a094b701526d1c31d58b545930b6dfbe3119d6d84d
+  unzip -q -o paas-kit-871ac51.zip
   sh paas-kit/install.sh
      -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
      -> "model address: NOT FOUND": run it again with your address:
@@ -50,7 +51,7 @@ TURN THINGS OFF / REMOVE (root)
   sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
 
 FROM AN EARLIER paas-kit (any version)
-  the same steps; settings are kept. This version adds the optional ponytail plugin. Before it: rtk audited and
+  the same steps; settings are kept. This version: ponytail inside the paas Market, Headroom 2 workers, code-graph guidance. Before: rtk audited and
   patched, no Kompress, Headroom with 1-4 workers, offline speed settings.
 
 UPDATE LATER
