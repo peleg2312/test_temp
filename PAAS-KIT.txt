@@ -11,8 +11,8 @@ Market: each user adds the ones they want. It never changes the brain, a team re
                       there: oc/kubectl logs and describe, aws, ps, ruff, ls -l. 18 ms per command.
   Headroom            makes the model's input smaller. Default profile safe, strictly lossless: JSON lists become
                       compact tables, every row and value kept (measured: volume list 70%, host list 53%, port list
-                      68% fewer tokens). Logs and documents reach GLM unchanged. profile full adds Headroom's other
-                      compressors and Kompress (included, offline). If it stops, sessions go straight to GLM.
+                      68% fewer tokens). Logs and documents reach GLM unchanged. Kompress is not shipped (little gain,
+                      ~0.8 GB RAM, damaged answers). If it stops, sessions go straight to GLM.
   MEASURED TOGETHER   one session of 8 shell commands + 4 MCP results: 96,263 tokens plain -> 88,984 with rtk (8%)
                       -> 43,878 with rtk + Headroom safe (54% fewer), nothing left out except what rtk prints a
                       "rtk recall <hash>" for.
