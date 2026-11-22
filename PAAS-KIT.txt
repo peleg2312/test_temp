@@ -48,7 +48,7 @@ TURN THINGS OFF / REMOVE (root)
   paas-kit plugin off rtk              rtk off for everyone (on: plugin on rtk)
   paas-kit plugin on code-graph        a Market plugin forced on for everyone (off: back to each user's choice);
                                        also fastapi-api, ponytail
-  paas-kit headroom profile full       Headroom: every compressor + Kompress (back: profile safe, the default)
+  paas-kit headroom profile full       Headroom: its other compressors too, lossy (back: profile safe, the default)
   sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
 
 FROM AN EARLIER paas-kit (any version)
