@@ -1,6 +1,6 @@
 PAAS-KIT  -  separate from the storage brain update
 ====================================================
-File: paas-kit-0b3c814.zip   (352M)   SHA-256: 150db73988d1695832201c6d9fa5eac0fad493f15432228bb13b98804a5193b2
+File: paas-kit-7b0c5df.zip   (352M)   SHA-256: c89d676c0b98c802ff94e5a31f2fc70a1adc6e3789e86753a80950d3628ddb25
 
 A separate zip, not part of the brain. Install it once as root. rtk and Headroom are on for every user on the VM
 (also users created later), whatever brain they use; only root can turn them off. The coding plugins are in the paas
@@ -29,9 +29,9 @@ Market: each user adds the ones they want. It never changes the brain, a team re
   Not included: Go (dropped on request).
 
 INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12; ~1.5 GB free in /opt)
-  cd /root && cp /path/to/test_temp/paas-kit-0b3c814.zip .        # the folder you git-pulled
-  sha256sum paas-kit-0b3c814.zip                               # must print 150db73988d1695832201c6d9fa5eac0fad493f15432228bb13b98804a5193b2
-  unzip -q -o paas-kit-0b3c814.zip
+  cd /root && cp /path/to/test_temp/paas-kit-7b0c5df.zip .        # the folder you git-pulled
+  sha256sum paas-kit-7b0c5df.zip                               # must print c89d676c0b98c802ff94e5a31f2fc70a1adc6e3789e86753a80950d3628ddb25
+  unzip -q -o paas-kit-7b0c5df.zip
   sh paas-kit/install.sh
      -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
      -> "model address: NOT FOUND": run it again with your address:
