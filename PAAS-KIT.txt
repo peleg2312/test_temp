@@ -1,6 +1,6 @@
 PAAS-KIT  -  separate from the storage brain update
 ====================================================
-File: paas-kit-fba5051.zip   (352M)   SHA-256: 7f172215ce33b065fda602bbb5ed6852c39cb88468c06861009b6ed56d92a816
+File: paas-kit-0b3c814.zip   (352M)   SHA-256: 150db73988d1695832201c6d9fa5eac0fad493f15432228bb13b98804a5193b2
 
 A separate zip, not part of the brain. Install it once as root. rtk and Headroom are on for every user on the VM
 (also users created later), whatever brain they use; only root can turn them off. The coding plugins are in the paas
@@ -18,17 +18,20 @@ Market: each user adds the ones they want. It never changes the brain, a team re
                       "rtk recall <hash>" for.
   code-graph (Market) a graph of the git repository for large code bases: what a change breaks, callers of callers,
                       review (measured 2.4x faster on those questions). /code-graph:build once per repository.
-  fastapi-api (Market) Python REST APIs offline: /fastapi-api:new <name>, paas-kit venv, rules, api-reviewer agent.
+                      Carries its own engine (code-review-graph wheels): on the VM one shared copy, built at install.
+  fastapi-api (Market) Python REST APIs offline: /fastapi-api:new <name>, rules, api-reviewer agent; carries its own
+                      FastAPI wheels (Python 3.12 / 3.9).
   ast-grep            structural code search on the PATH.
   ponytail (Market)   coding mode: smallest correct change, never cutting validation, security or tests. Off by default;
                       a plugin of the paas Market (the installer adds it there if the brain does not carry it yet);
-                      each user adds it in the Market. Root, for everyone: paas-kit plugin on ponytail. Needs node.
+                      each user adds it in the Market. Root, for everyone: paas-kit plugin on ponytail. Uses the web UI's Node
+                      (or the system's); without Node its hooks stay quiet.
   Not included: Go (dropped on request).
 
 INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12; ~1.5 GB free in /opt)
-  cd /root && cp /path/to/test_temp/paas-kit-fba5051.zip .        # the folder you git-pulled
-  sha256sum paas-kit-fba5051.zip                               # must print 7f172215ce33b065fda602bbb5ed6852c39cb88468c06861009b6ed56d92a816
-  unzip -q -o paas-kit-fba5051.zip
+  cd /root && cp /path/to/test_temp/paas-kit-0b3c814.zip .        # the folder you git-pulled
+  sha256sum paas-kit-0b3c814.zip                               # must print 150db73988d1695832201c6d9fa5eac0fad493f15432228bb13b98804a5193b2
+  unzip -q -o paas-kit-0b3c814.zip
   sh paas-kit/install.sh
      -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
      -> "model address: NOT FOUND": run it again with your address:
@@ -43,6 +46,13 @@ CHECK THAT IT WORKS
   in a new chat inside a git repo:     /code-graph:build      then ask "who calls <function>?"
   journalctl -u paas-headroom -n 50    the Headroom log
 
+THE PLUGINS ON ANOTHER PC (paas Market from a laptop, no kit, nothing from the VM needed at run time)
+  Add code-graph / fastapi-api / ponytail in the paas Market as on the VM. They come with everything they use:
+  code-graph builds its engine in ~/.cache/paas-plugins on first use (about a minute; the first session says
+  "preparing", the next one has the graph). Needs python3.10+. The wheels inside are Linux x86_64; on a Mac
+  (or ARM) code-graph and fastapi-venv install the same versions from pip instead (needs pip access once).
+  ponytail needs Node.js (the laptop's web UI has its own).
+
 TURN THINGS OFF / REMOVE (root)
   paas-kit headroom off                sessions straight to GLM again (on: paas-kit headroom on)
   paas-kit plugin off rtk              rtk off for everyone (on: plugin on rtk)
@@ -52,8 +62,9 @@ TURN THINGS OFF / REMOVE (root)
   sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
 
 FROM AN EARLIER paas-kit (any version)
-  the same steps; settings are kept. This version: rtk for everyone; code-graph, fastapi-api and ponytail are paas Market plugins each user adds
-  (an earlier kit's forced code-graph / fastapi-api become each user's choice). Before: rtk audited and
+  the same steps; settings are kept. This version: code-graph, fastapi-api and ponytail are self-contained - they no longer
+  need the kit, so they work the same from the paas Market on any PC. Before: rtk for everyone, the coding plugins
+  moved to the paas Market, rtk audited and
   patched, no Kompress, Headroom with 1-4 workers, offline speed settings.
 
 UPDATE LATER
