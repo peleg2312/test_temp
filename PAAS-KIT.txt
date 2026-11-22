@@ -1,0 +1,40 @@
+PAAS-KIT  -  separate from the storage brain update
+====================================================
+File: paas-kit-f5c8649.zip   (345M)   SHA-256: b13be90a31e3f1bca61d4fb9ed42f6ba398eee118b2f9add4f256aa17ac0fdf2
+
+A separate zip, not part of the brain. Install it once as root: every user on the VM, and every user created later,
+gets it, whatever brain (team) they use. It never changes the brain, a team repository, managed-settings.json or
+anyone's own settings.
+
+  Headroom            makes the model's input smaller (JSON lists from the MCP servers become compact tables,
+                      every row kept: 50-70% fewer tokens on big lists). If it stops, sessions go straight to GLM.
+  code-graph plugin   for large code bases: a graph of the git repository the model asks instead of reading files
+                      (what a change breaks, who calls what, review). /code-graph:build once per repository.
+  fastapi-api plugin  Python REST APIs offline: /fastapi-api:new <name>, paas-kit venv, rules, api-reviewer agent.
+  ast-grep            structural code search on the PATH.
+  Not included: Go (dropped on request), rtk (blocked here; see the README).
+
+INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12)
+  cd /root && cp /path/to/test_temp/paas-kit-f5c8649.zip .        # the folder you git-pulled
+  sha256sum paas-kit-f5c8649.zip                               # must print b13be90a31e3f1bca61d4fb9ed42f6ba398eee118b2f9add4f256aa17ac0fdf2
+  unzip -q -o paas-kit-f5c8649.zip
+  sh paas-kit/install.sh
+     -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
+     -> "model address: NOT FOUND": run it again with your address:
+        sh paas-kit/install.sh --upstream https://<the GLM address Claude uses today>
+  paas-kit status
+  Then start a new chat in the web UI (running chats keep the old setting until restarted).
+
+CHECK THAT IT WORKS
+  paas-kit status                      Headroom "answering", "new sessions through Headroom", savings after some use
+  in a new chat inside a git repo:     /code-graph:build      then ask "who calls <function>?"
+  journalctl -u paas-headroom -n 50    the Headroom log
+
+TURN THINGS OFF / REMOVE (root)
+  paas-kit headroom off                sessions straight to GLM again (on: paas-kit headroom on)
+  paas-kit plugin off code-graph       a plugin off for everyone (also fastapi-api)
+  sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
+
+UPDATE LATER
+  unzip the new zip and run  sh paas-kit/install.sh  again (its settings are kept).
+More: paas-kit/README.txt in the zip.
