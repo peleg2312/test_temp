@@ -1,6 +1,6 @@
 PAAS-KIT  -  separate from the storage brain update
 ====================================================
-File: paas-kit-f9790ae.zip   (528M)   SHA-256: 79d7614ce320c372b201948673f5aac032059348457a902fed57b4fef12f6b9a
+File: paas-kit-7517201.zip   (528M)   SHA-256: 2695754ea0d688c904744c1f73cdd7186cced80603385427b989be78bd5fe82f
 
 A separate zip, not part of the brain. Install it once as root: every user on the VM, and every user created later,
 has all of it on, whatever brain (team) they use - no question asked, and users cannot turn it off. Only root can
@@ -10,10 +10,13 @@ has all of it on, whatever brain (team) they use - no question asked, and users 
                       grep, find, tests, builds, oc / kubectl / docker, curl ...) runs in its short form. The model
                       types plain commands. Only check: the model may not type "rtk ..." itself (the brain's guard
                       cannot see inside it). 18 ms per command, the same as rtk anywhere.
-  Headroom            makes the model's input smaller, with Headroom's own defaults and Kompress (its AI text
-                      compressor, included, offline): JSON lists become compact tables (every row kept), long logs
-                      keep their errors, earlier turns stay as they were so GLM's prompt cache keeps working.
-                      If it stops, sessions go straight to GLM.
+  Headroom            makes the model's input smaller. Default profile safe: JSON lists from the MCP servers become
+                      compact tables, every row and value kept (measured: volume list 70%, host list 53%, port list
+                      68% fewer tokens). Logs and documents reach GLM unchanged. profile full adds Headroom's other
+                      compressors and Kompress (included, offline). If it stops, sessions go straight to GLM.
+  MEASURED TOGETHER   one session of 8 shell commands + 4 MCP results: 96,263 tokens plain -> 88,984 with rtk (8%)
+                      -> 43,878 with rtk + Headroom safe (54% fewer), nothing left out except what rtk prints a
+                      "rtk recall <hash>" for.
   code-graph plugin   for large code bases: a graph of the git repository the model asks instead of reading files
                       (what a change breaks, who calls what, review). /code-graph:build once per repository.
   fastapi-api plugin  Python REST APIs offline: /fastapi-api:new <name>, paas-kit venv, rules, api-reviewer agent.
@@ -21,9 +24,9 @@ has all of it on, whatever brain (team) they use - no question asked, and users 
   Not included: Go (dropped on request).
 
 INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12; ~2 GB free in /opt)
-  cd /root && cp /path/to/test_temp/paas-kit-f9790ae.zip .        # the folder you git-pulled
-  sha256sum paas-kit-f9790ae.zip                               # must print 79d7614ce320c372b201948673f5aac032059348457a902fed57b4fef12f6b9a
-  unzip -q -o paas-kit-f9790ae.zip
+  cd /root && cp /path/to/test_temp/paas-kit-7517201.zip .        # the folder you git-pulled
+  sha256sum paas-kit-7517201.zip                               # must print 2695754ea0d688c904744c1f73cdd7186cced80603385427b989be78bd5fe82f
+  unzip -q -o paas-kit-7517201.zip
   sh paas-kit/install.sh
      -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
      -> "model address: NOT FOUND": run it again with your address:
@@ -41,12 +44,13 @@ CHECK THAT IT WORKS
 TURN THINGS OFF / REMOVE (root)
   paas-kit headroom off                sessions straight to GLM again (on: paas-kit headroom on)
   paas-kit plugin off rtk              a plugin off for everyone (also code-graph, fastapi-api); on: plugin on
-  paas-kit headroom profile safe       Headroom: JSON tables only, nothing ever left out (back: profile full)
+  paas-kit headroom profile full       Headroom: every compressor + Kompress (back: profile safe, the default)
   sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
 
-FROM AN EARLIER paas-kit (f5c8649, f975c86 or a89592c)
+FROM AN EARLIER paas-kit (f5c8649, f975c86, a89592c or f9790ae)
   the same steps; settings are kept. This one: rtk with its own hook, Headroom with its own defaults + Kompress
-  (an earlier "safe" setting becomes "full" unless root chose it with paas-kit headroom profile).
+  Headroom now in token mode (it compresses during Claude's tool loops) and profile safe unless root chose
+  full with paas-kit headroom profile full.
 
 UPDATE LATER
   unzip the new zip and run  sh paas-kit/install.sh  again (its settings are kept).
