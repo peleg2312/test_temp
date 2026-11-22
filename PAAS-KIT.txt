@@ -32,7 +32,8 @@ INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12; ~2 G
   Then start a new chat in the web UI (running chats keep the old setting until restarted).
 
 CHECK THAT IT WORKS
-  in a new chat: "run pytest -v in <a project>"   long output comes back shortened, ending with "[rtk: shortened ...]"
+  in a new chat (auto mode): "run git log -5 --stat and ls -la"   the output comes back in rtk's compact form;
+                                       after a while: paas-kit gain   (each user's rtk savings)
   paas-kit status                      Headroom "answering", "new sessions through Headroom", savings after some use
   in a new chat inside a git repo:     /code-graph:build      then ask "who calls <function>?"
   journalctl -u paas-headroom -n 50    the Headroom log
