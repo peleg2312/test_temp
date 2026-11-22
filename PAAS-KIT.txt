@@ -1,13 +1,17 @@
 PAAS-KIT  -  separate from the storage brain update
 ====================================================
-File: paas-kit-f975c86.zip   (351M)   SHA-256: 352e3e422dc15d400c00ff0c771fa664bdd7827312d125fbae8a9a77c5381266
+File: paas-kit-a89592c.zip   (351M)   SHA-256: de5e643c2f94e73cc3f70b53e7b308c0bf239494dc8b785e54e4161308f998c0
 
 A separate zip, not part of the brain. Install it once as root: every user on the VM, and every user created later,
 has all of it on, whatever brain (team) they use - no question asked, and users cannot turn it off. Only root can
 (below). It never changes the brain, a team repository, managed-settings.json or anyone's own settings.
 
-  rtk                 shorter shell output: long test / linter / grep / find / git / log output is filtered after the
-                      command ran (failures and errors kept). The command itself is never changed (the guard sees it).
+  rtk                 shorter shell output. Commands that only read (git, ls, cat, grep, find, tests, builds,
+                      oc / kubectl / helm get-describe-logs, curl GET, psql SELECT ...) run in rtk's short form
+                      ("rtk git status"); long output of the rest is filtered after it ran. The kit's guard around it:
+                      anything that changes something (oc delete, apply, curl POST, git push, sudo, > file ...) runs
+                      exactly as typed, and a command is rewritten only if every guard (the brain's read-only guard,
+                      a team's) lets the original through without a block or a question.
   Headroom            makes the model's input smaller (JSON lists from the MCP servers become compact tables,
                       every row kept: 50-70% fewer tokens on big lists). If it stops, sessions go straight to GLM.
   code-graph plugin   for large code bases: a graph of the git repository the model asks instead of reading files
@@ -17,9 +21,9 @@ has all of it on, whatever brain (team) they use - no question asked, and users 
   Not included: Go (dropped on request).
 
 INSTALL  (on the VM, as root; needs python3.12:  dnf install -y python3.12)
-  cd /root && cp /path/to/test_temp/paas-kit-f975c86.zip .        # the folder you git-pulled
-  sha256sum paas-kit-f975c86.zip                               # must print 352e3e422dc15d400c00ff0c771fa664bdd7827312d125fbae8a9a77c5381266
-  unzip -q -o paas-kit-f975c86.zip
+  cd /root && cp /path/to/test_temp/paas-kit-a89592c.zip .        # the folder you git-pulled
+  sha256sum paas-kit-a89592c.zip                               # must print de5e643c2f94e73cc3f70b53e7b308c0bf239494dc8b785e54e4161308f998c0
+  unzip -q -o paas-kit-a89592c.zip
   sh paas-kit/install.sh
      -> at the end "model ... <your GLM address>" and "new sessions  through Headroom".
      -> "model address: NOT FOUND": run it again with your address:
@@ -36,10 +40,11 @@ CHECK THAT IT WORKS
 TURN THINGS OFF / REMOVE (root)
   paas-kit headroom off                sessions straight to GLM again (on: paas-kit headroom on)
   paas-kit plugin off rtk              a plugin off for everyone (also code-graph, fastapi-api); on: plugin on
+  paas-kit rtk rewrite off             rtk only filters output after commands ran (on: rtk rewrite on)
   sh /opt/paas-kit/kit/uninstall.sh    removes everything the kit added
 
-FROM paas-kit-f5c8649 (the first kit)
-  the same steps; it adds rtk, makes everything on for everyone, and removes the kit's card from the paas Market.
+FROM AN EARLIER paas-kit (f5c8649 or f975c86)
+  the same steps; settings are kept. f975c86 -> this: rtk also runs reading commands in its short form (guarded).
 
 UPDATE LATER
   unzip the new zip and run  sh paas-kit/install.sh  again (its settings are kept).
