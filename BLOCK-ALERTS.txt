@@ -1,0 +1,20 @@
+BLOCK-ALERTS SKILL  -  storage alerts in, a clear Outlook morning email out
+=========================================================================
+File: block-alerts-53efc1b.zip   (64K)   SHA-256: ab6ffa6911b23c4d006aeb8bd46f93a9719e84ba36830413741437578c2ff1d0
+
+Standalone: works with any brain or none, on the VM or a laptop. Needs python3 3.9+ (RHEL 9 has it).
+The email's HTML is fixed inside the skill (block_alerts_mail.py); Claude only fills the content and runs it.
+
+INSTALL (on the VM)
+  cd /root && cp /path/to/test_temp/block-alerts-53efc1b.zip .
+  sha256sum block-alerts-53efc1b.zip                       # must print ab6ffa6911b23c4d006aeb8bd46f93a9719e84ba36830413741437578c2ff1d0
+  unzip -q -o block-alerts-53efc1b.zip && cd block-alerts-53efc1b
+  sh install.sh --check              # "ok: the script builds the example email"
+  sudo sh install.sh --all           # every user + users created later
+     (only for yourself:  sh install.sh)
+  Start a new Claude chat, then:  "block alerts: the PowerMax and MDS alerts of the last 24 h, email them to me"
+
+SEE THE EMAIL FIRST:  open block-alerts/examples/email.eml in Outlook (a draft; nothing is sent)
+MAIL SETUP: Claude asks for your SMTP relay the first time; the password goes in a file only you can read
+  (install -m 600 /dev/null ~/.config/block-alerts/smtp.pass). Test: python3 ~/.claude/skills/block-alerts/block_alerts_mail.py --check
+More: INSTALL.txt in the zip.
