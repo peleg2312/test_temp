@@ -1,14 +1,14 @@
 BLOCK-ALERTS SKILL  -  storage alerts in, a clear Outlook morning email out
 =========================================================================
-File: block-alerts-f32a13c.zip   (68K)   SHA-256: 84ca3f9d4a31269548f8df00770f426f60997c4284ba6f408036f114236667e2
+File: block-alerts-0b3193d.zip   (68K)   SHA-256: a1d0e295f24792e464d49bb4c38a9392f05cf4ae9d07d2349086520b096d0847
 
 Standalone: works with any brain or none, on the VM or a laptop. Needs python3 3.9+ (RHEL 9 has it).
 The email's HTML is fixed inside the skill (block_alerts_mail.py); Claude only fills the content and runs it.
 
 INSTALL (on the VM)
-  cd /root && cp /path/to/test_temp/block-alerts-f32a13c.zip .
-  sha256sum block-alerts-f32a13c.zip                       # must print 84ca3f9d4a31269548f8df00770f426f60997c4284ba6f408036f114236667e2
-  unzip -q -o block-alerts-f32a13c.zip && cd block-alerts-f32a13c
+  cd /root && cp /path/to/test_temp/block-alerts-0b3193d.zip .
+  sha256sum block-alerts-0b3193d.zip                       # must print a1d0e295f24792e464d49bb4c38a9392f05cf4ae9d07d2349086520b096d0847
+  unzip -q -o block-alerts-0b3193d.zip && cd block-alerts-0b3193d
   sh install.sh --check              # "ok: the script builds the example email"
   sudo sh install.sh --all           # every user + users created later
      (only for yourself:  sh install.sh)
