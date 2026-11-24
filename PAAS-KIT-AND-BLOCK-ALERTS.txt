@@ -1,0 +1,20 @@
+PAAS-KIT + BLOCK-ALERTS  -  2026-11-24
+File: paas-kit-and-block-alerts-2026-11-24.zip (352M)  SHA-256: f5c31ac71368c961a8bdd2502ea942d33ab50538c18118705451955316aa31c5
+======================================
+Two separate add-ons in one zip. As root on the VM, in this folder.
+
+1. paas-kit (eb15645)  -  rtk + Headroom for every user; the coding plugins in the paas Market
+     sh paas-kit/install.sh
+       (model address NOT FOUND:  sh paas-kit/install.sh --upstream https://<your GLM address>)
+     paas-kit status
+   New in this version: its guard no longer refuses a command just because a file it writes or a commit message
+   mentions the tool, and it now also catches calls hidden in "su -c" and "eval". Nothing else changed since 7b0c5df.
+   Already on 7b0c5df? Running install.sh again updates it; settings in /etc/paas-kit/kit.json are kept.
+
+2. block-alerts (0b3193d)  -  morning alert email, for every user
+     cd block-alerts-0b3193d
+     sh install.sh --check        -> "ok: the script builds the example email"
+     sh install.sh --all
+   See the email first: block-alerts/examples/email.eml (open in Outlook: a draft, nothing is sent).
+
+Then every user starts a new chat. More: paas-kit/README.txt and block-alerts-0b3193d/INSTALL.txt.
